@@ -96,3 +96,13 @@ These patches address specific quirks, bottlenecks, and anti-cheat requirements 
 | `lug-wine-tkg-experimental-git` | Standard Wine built with LUG patches for compatibility. |
 | `lug-wine-tkg-staging-experimental-git` | Wine with Wine-Staging patchset plus LUG patches. |
 | `lug-wine-tkg-staging-experimental-wayland-git` | Wine-Staging with forced native Wine Wayland driver enabled. |
+
+---
+
+## Agent References Index
+
+- [**Plans Index (`plans/README.md`)**](file:///workspaces/lug-wine-experimental/.agents/references/plans/README.md):
+  - [Wine-TKG Skills & MCP Architecture Plan](file:///workspaces/lug-wine-experimental/.agents/references/plans/wine_tkg_skills_and_mcp_plan.md)
+  - [GLIBC 2.35 Build & Compatibility Plan](file:///workspaces/lug-wine-experimental/.agents/references/plans/glibc_235_compatibility_plan.md)
+- [**Notes Index (`notes/README.md`)**](file:///workspaces/lug-wine-experimental/.agents/references/notes/README.md):
+  - [LUG Helper Runner Deployment & Execution Guide](file:///workspaces/lug-wine-experimental/.agents/references/notes/lug_helper_runner_deployment_and_execution.md)

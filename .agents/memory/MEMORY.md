@@ -156,3 +156,4 @@ This document stores persistent context, key decisions, ongoing progress, and no
     - Verified execution as user `tarfy`:
       - `lug-helper.sh --version`, `--show-directories`, and `--about` ran cleanly.
       - Executed `sc-launch.sh shell` and ran Wine commands inside the launch shell with zero GLIBC errors.
+    - Created [`.agents/references/notes/`](file:///workspaces/lug-wine-experimental/.agents/references/notes/README.md) and documented deployment and execution procedures in [`lug_helper_runner_deployment_and_execution.md`](file:///workspaces/lug-wine-experimental/.agents/references/notes/lug_helper_runner_deployment_and_execution.md).
