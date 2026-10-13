@@ -88,3 +88,17 @@ This document stores persistent context, key decisions, ongoing progress, and no
     - [`.agents/skills/wine-patch-validator/`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/SKILL.md) with [`validate_patches.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/scripts/validate_patches.sh).
     - [`.agents/skills/tkg-config-auditor/`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/SKILL.md) with [`audit_config.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/scripts/audit_config.sh).
   - Re-ran `check_deps.sh` and confirmed all host dependencies for Wine-TKG WoW64 build pass.
+
+### Session 7 — 2026-10-13
+- **User Request**:
+  - Test all skills and MCPs, report what is running, compare to `.agents/references/plans`.
+  - Check submodule readiness.
+  - In-depth review of `glibc_235_compatibility_plan.md` to ensure zero gaps and complete build viability on GLIBC 2.35, Ubuntu 22.04, and kernel `7.2.9-zabbly+`.
+- **Actions Taken**:
+  - Validated live operation of all 4 MCP servers (`clangd`, `debugger`, `git`, `filesystem`) and executed tools on each.
+  - Validated all 6 workspace skills via test script executions.
+  - Confirmed submodules `patches` and `wine-tkg-git` are fully cloned, clean, and checked out to required commits.
+  - Uncovered missing configure dependencies: `libgstreamer1.0-dev`, `libgstreamer-plugins-base1.0-dev` (required by `--with-gstreamer`) and `glslang-tools` (`glslangValidator`). Installed them and updated `.devcontainer/Dockerfile` and `check_deps.sh`.
+  - Expanded `check_deps.sh` to comprehensively audit 19 critical build tools, cross-compilers, and pkg-config packages.
+  - Conducted deep review of `glibc_235_compatibility_plan.md`, adding host kernel 7.2.9 analysis (Fsync `futex_waitv` support vs Ntsync device absence), WoW64 multiarch isolation benefits, MinGW 8.0 `PATHCCH_NONE` VKD3D-Proton workaround, and Wine version alignment (11.19).
+

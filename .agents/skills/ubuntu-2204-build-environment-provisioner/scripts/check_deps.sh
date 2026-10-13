@@ -27,16 +27,38 @@ check_header() {
   fi
 }
 
-# Core build tools
+# Core build tools & Cross compilers
 check_cmd gcc "build-essential"
 check_cmd g++ "build-essential"
 check_cmd make "build-essential"
 check_cmd x86_64-w64-mingw32-gcc "mingw-w64"
+check_cmd i686-w64-mingw32-gcc "mingw-w64"
 check_cmd flex "flex"
 check_cmd bison "bison"
 check_cmd git "git"
 check_cmd curl "curl"
 check_cmd pkg-config "pkg-config"
+check_cmd glslangValidator "glslang-tools"
+check_cmd meson "meson"
+check_cmd ninja "ninja-build"
+
+# Pkg-config library checks
+check_pc() {
+  local mod="$1"
+  local pkg="$2"
+  if ! pkg-config --exists "$mod" >/dev/null 2>&1; then
+    missing_pkgs+=("$pkg")
+  fi
+}
+
+check_pc "gstreamer-1.0" "libgstreamer1.0-dev"
+check_pc "gstreamer-plugins-base-1.0" "libgstreamer-plugins-base1.0-dev"
+check_pc "vulkan" "libvulkan-dev"
+check_pc "openxr" "libopenxr-dev"
+check_pc "wayland-client" "libwayland-dev"
+check_pc "xkbcommon" "libxkbcommon-dev"
+check_pc "alsa" "libasound2-dev"
+check_pc "libpulse" "libpulse-dev"
 
 # Headers
 if [ ! -f /usr/local/include/linux/ntsync.h ] && [ ! -f /usr/include/linux/ntsync.h ]; then

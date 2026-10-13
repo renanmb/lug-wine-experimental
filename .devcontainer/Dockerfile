@@ -77,6 +77,9 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     libwayland-dev \
     libxkbcommon-dev \
     libopenxr-dev \
+    glslang-tools \
+    libgstreamer1.0-dev \
+    libgstreamer-plugins-base1.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 2.1 Fetch Linux Ntsync UAPI header and build Clangd MCP Server
