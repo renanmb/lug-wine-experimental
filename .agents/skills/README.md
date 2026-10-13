@@ -35,3 +35,5 @@ Each skill should reside in its own subdirectory containing:
    - Uses [`validate_patches.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/scripts/validate_patches.sh) to test and validate community patch syntax and application against target Wine git trees.
 6. [**`tkg-config-auditor`**](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/SKILL.md):
    - Uses [`audit_config.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/scripts/audit_config.sh) to audit `.cfg` profiles and ensure `_NOLIB32="wow64"` is active for Ubuntu 22.04 compatibility.
+7. [**`eac-and-prefix-verifier`**](file:///workspaces/lug-wine-experimental/.agents/skills/eac-and-prefix-verifier/SKILL.md):
+   - Uses [`verify_prefix.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/eac-and-prefix-verifier/scripts/verify_prefix.sh) to bootstrap an ephemeral prefix and verify prefix creation, `HideWineExports`, EAC dummy DLLs, VKD3D-Proton DLLs, and 32/64-bit command execution.

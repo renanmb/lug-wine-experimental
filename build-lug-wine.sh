@@ -187,7 +187,7 @@ if [ "$#" -gt 0 ]; then
                 shift
                 ;;
             --vkd3d-proton-dir | -d )
-                vkd3d_build_dir="$2"
+                vkd3d_build_dir="$(realpath "$2")"
                 shift
                 ;;
             * )
