@@ -26,10 +26,11 @@
   },
   "mounts": [
     "source=/home/tarfy/Documents/GitHub/renanmb/lug-helper,target=/lug-helper,type=bind",
+    "source=/home/tarfy/Games,target=/home/tarfy/Games,type=bind",
     "source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume",
     "source=hermes-home-${devcontainerId},target=/root/.hermes,type=volume",
     "source=antigravity-config-${devcontainerId},target=/root/.gemini,type=volume",
     "source=ccache-cache-${devcontainerId},target=/root/.ccache,type=volume"
   ],
-  "postCreateCommand": "mkdir -p /root/.gemini/config && cp -n /workspaces/lug-wine-experimental/.agents/mcp_config.json /root/.gemini/config/mcp_config.json 2>/dev/null || true && echo 'Checking build environment:' && gcc --version && ldd --version && echo 'Ready to build lug-wine-experimental!'"
+  "postCreateCommand": "mkdir -p /root/.gemini/config && cp -n /workspaces/lug-wine-experimental/.agents/mcp_config.json /root/.gemini/config/mcp_config.json 2>/dev/null || true && ln -sfn /home/tarfy/Games /root/Games 2>/dev/null || true && echo 'Checking build environment:' && gcc --version && ldd --version && echo 'Ready to build lug-wine-experimental!'"
 }
