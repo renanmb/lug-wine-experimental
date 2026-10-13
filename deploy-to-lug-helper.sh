@@ -12,6 +12,8 @@ TARGET_TARBALL="${1:-$(find "${OUTPUT_DIR}" -name "lug-wine-*.tar.gz" -type f | 
 LUG_HELPER_DIR="${2:-/home/tarfy/Documents/GitHub/renanmb/lug-helper}"
 if [ ! -d "${LUG_HELPER_DIR}" ] && [ -d "${HOME}/Documents/GitHub/renanmb/lug-helper" ]; then
     LUG_HELPER_DIR="${HOME}/Documents/GitHub/renanmb/lug-helper"
+elif [ ! -d "${LUG_HELPER_DIR}" ] && [ -d "/lug-helper" ]; then
+    LUG_HELPER_DIR="/lug-helper"
 fi
 
 SC_GAMES_DIR="${HOME}/Games/star-citizen"
