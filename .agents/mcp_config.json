@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "clangd": {
+      "command": "node",
+      "args": ["/opt/clangd-mcp-server/dist/index.js"]
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "/workspaces/lug-wine-experimental"]
+    },
+    "debugger": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/smadi0x86/MDB-MCP", "mdb-mcp"]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspaces/lug-wine-experimental"]
+    }
+  }
+}

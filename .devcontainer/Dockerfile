@@ -34,6 +34,11 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     build-essential \
     gcc-multilib \
     g++-multilib \
+    clangd \
+    gdb \
+    mingw-w64 \
+    meson \
+    ninja-build \
     flex \
     bison \
     ccache \
@@ -43,7 +48,6 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     libtool \
     nasm \
     cmake \
-    ninja-build \
     zstd \
     tar \
     bc \
@@ -72,7 +76,14 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     libunwind-dev \
     libwayland-dev \
     libxkbcommon-dev \
+    libopenxr-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# 2.1 Fetch Linux Ntsync UAPI header and build Clangd MCP Server
+RUN mkdir -p /usr/local/include/linux && \
+    curl -fsSL --retry 5 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/include/uapi/linux/ntsync.h -o /usr/local/include/linux/ntsync.h && \
+    git clone --depth 1 https://github.com/felipeerias/clangd-mcp-server /opt/clangd-mcp-server && \
+    cd /opt/clangd-mcp-server && npm install && npm run build
 
 # 3. Install GitHub CLI & initialize git-lfs
 RUN wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null && \

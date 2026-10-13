@@ -30,8 +30,8 @@ max_minor=$(echo "$MAX_ALLOWED_GLIBC" | cut -d. -f2)
 
 check_file() {
   local file="$1"
-  # Only check ELF binaries
-  if ! file -b "$file" | grep -q "ELF"; then
+  # Follow symlink and check if ELF binary
+  if ! file -bL "$file" 2>/dev/null | grep -q "ELF"; then
     return 0
   fi
 

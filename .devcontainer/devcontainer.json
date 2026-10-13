@@ -30,5 +30,5 @@
     "source=antigravity-config-${devcontainerId},target=/root/.gemini,type=volume",
     "source=ccache-cache-${devcontainerId},target=/root/.ccache,type=volume"
   ],
-  "postCreateCommand": "echo 'Checking build environment:' && gcc --version && ldd --version && echo 'Ready to build lug-wine-experimental!'"
+  "postCreateCommand": "mkdir -p /root/.gemini/config && cp -n /workspaces/lug-wine-experimental/.agents/mcp_config.json /root/.gemini/config/mcp_config.json 2>/dev/null || true && echo 'Checking build environment:' && gcc --version && ldd --version && echo 'Ready to build lug-wine-experimental!'"
 }

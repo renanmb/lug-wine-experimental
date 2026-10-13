@@ -31,3 +31,7 @@ Each skill should reside in its own subdirectory containing:
    - Instructions and workflow to build and bundle VKD3D-Proton DirectX 12 PE DLLs under Ubuntu 22.04.
 4. [**`c-build-and-patch-debugger`**](file:///workspaces/lug-wine-experimental/.agents/skills/c-build-and-patch-debugger/SKILL.md):
    - Triages and resolves C compilation issues, GCC 11 flags, and Wine patch conflicts.
+5. [**`wine-patch-validator`**](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/SKILL.md):
+   - Uses [`validate_patches.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/scripts/validate_patches.sh) to test and validate community patch syntax and application against target Wine git trees.
+6. [**`tkg-config-auditor`**](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/SKILL.md):
+   - Uses [`audit_config.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/scripts/audit_config.sh) to audit `.cfg` profiles and ensure `_NOLIB32="wow64"` is active for Ubuntu 22.04 compatibility.

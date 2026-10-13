@@ -75,3 +75,16 @@ This document stores persistent context, key decisions, ongoing progress, and no
     - [`.agents/skills/c-build-and-patch-debugger/`](file:///workspaces/lug-wine-experimental/.agents/skills/c-build-and-patch-debugger/SKILL.md).
   - Authored a dedicated technical plan: [`.agents/references/plans/glibc_235_compatibility_plan.md`](file:///workspaces/lug-wine-experimental/.agents/references/plans/glibc_235_compatibility_plan.md).
   - Executed initial dependency check via `check_deps.sh`, verifying that gcc/g++/flex/bison/make/git are installed, while `mingw-w64` and `ntsync.h` remain to be provisioned before compiling.
+
+### Session 6 — 2026-10-13
+- **User Query**: Should we modify the Dockerfile to install the MCPs and skills? What is the best course of action here?
+- **Actions Taken**:
+  - Defined the architecture division:
+    - **Skills** remain in repository version control ([`.agents/skills/`](file:///workspaces/lug-wine-experimental/.agents/skills/)) so they are tracked by git and auto-discovered without container rebuilds.
+    - **Toolchains & MCP Runtime** are placed into [`.devcontainer/Dockerfile`](file:///workspaces/lug-wine-experimental/.devcontainer/Dockerfile) and [`.devcontainer/devcontainer.json`](file:///workspaces/lug-wine-experimental/.devcontainer/devcontainer.json) for 100% build reproducibility.
+  - Installed `clangd`, `gdb`, `mingw-w64`, `meson`, `ninja-build`, `ntsync.h`, and built `/opt/clangd-mcp-server`.
+  - Configured active MCP servers in `/root/.gemini/config/mcp_config.json` and committed a template to [`.agents/mcp_config.json`](file:///workspaces/lug-wine-experimental/.agents/mcp_config.json).
+  - Authored and verified two additional skills:
+    - [`.agents/skills/wine-patch-validator/`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/SKILL.md) with [`validate_patches.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/scripts/validate_patches.sh).
+    - [`.agents/skills/tkg-config-auditor/`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/SKILL.md) with [`audit_config.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/scripts/audit_config.sh).
+  - Re-ran `check_deps.sh` and confirmed all host dependencies for Wine-TKG WoW64 build pass.
