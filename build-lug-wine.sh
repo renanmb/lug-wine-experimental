@@ -28,7 +28,6 @@ patches=("10.2+_eac_fix"
          "hidewineexports"
          "reg_hide_wine"
          "eac_60101_timeout"
-         "unopenable-device-is-bad"
          "append_cmd"
          "sc_gpumem"
          "0001-wineopenxr_add"
@@ -39,6 +38,7 @@ patches=("10.2+_eac_fix"
          "winewayland-guess-primary-output"
          "winewayland-fullscreen-idle-inhibit"
          "winewayland-systray"
+         "winewayland-disable-ime"
 )
 
 cleanup() {

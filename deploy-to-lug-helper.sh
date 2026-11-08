@@ -17,6 +17,10 @@ elif [ ! -d "${LUG_HELPER_DIR}" ] && [ -d "/lug-helper" ]; then
 fi
 
 SC_GAMES_DIR="${HOME}/Games/star-citizen"
+if [ ! -d "${SC_GAMES_DIR}" ] && [ -d "/home/tarfy/Games/star-citizen" ]; then
+    SC_GAMES_DIR="/home/tarfy/Games/star-citizen"
+fi
+HOST_GAMES_DIR="/home/tarfy/Games/star-citizen"
 LUTRIS_RUNNERS_DIR="${HOME}/.local/share/lutris/runners/wine"
 
 echo "======================================================="
@@ -70,7 +74,7 @@ echo "  [OK] Deployed to ${LUTRIS_RUNNERS_DIR}/${RUNNER_NAME}"
 SC_LAUNCH="${SC_GAMES_DIR}/sc-launch.sh"
 if [ -f "${SC_LAUNCH}" ]; then
     echo "Updating wine_path in ${SC_LAUNCH}..."
-    sed -i "s|^export wine_path=.*|export wine_path=\"${SC_GAMES_DIR}/runners/${RUNNER_NAME}/bin\"|" "${SC_LAUNCH}"
+    sed -i "s|^export wine_path=.*|export wine_path=\"${HOST_GAMES_DIR}/runners/${RUNNER_NAME}/bin\"|" "${SC_LAUNCH}"
     echo "  [OK] Updated sc-launch.sh to target ${RUNNER_NAME}"
 fi
 

@@ -37,6 +37,7 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     clangd \
     gdb \
     mingw-w64 \
+    mingw-w64-tools \
     meson \
     ninja-build \
     flex \
@@ -80,11 +81,17 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     glslang-tools \
     libgstreamer1.0-dev \
     libgstreamer-plugins-base1.0-dev \
+    libxkbregistry-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# 2.1 Fetch Linux Ntsync UAPI header and build Clangd MCP Server
+# 2.1 Fetch Linux Ntsync UAPI header, generate MinGW libpathcch.a import libs, and build Clangd MCP Server
 RUN mkdir -p /usr/local/include/linux && \
     curl -fsSL --retry 5 https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/include/uapi/linux/ntsync.h -o /usr/local/include/linux/ntsync.h && \
+    printf "LIBRARY api-ms-win-core-path-l1-1-0.dll\nEXPORTS\nPathAllocCanonicalize@16\nPathAllocCombine@16\nPathCchAddBackslash@8\nPathCchAddBackslashEx@16\nPathCchAddExtension@12\nPathCchAppend@12\nPathCchAppendEx@16\nPathCchCanonicalize@12\nPathCchCanonicalizeEx@16\nPathCchCombine@16\nPathCchCombineEx@20\nPathCchFindExtension@12\nPathCchIsRoot@4\nPathCchRemoveBackslash@8\nPathCchRemoveBackslashEx@16\nPathCchRemoveExtension@8\nPathCchRemoveFileSpec@8\nPathCchRenameExtension@12\nPathCchSkipRoot@8\nPathCchStripPrefix@8\nPathCchStripToRoot@8\nPathIsUNCEx@8\n" > /tmp/pathcch.def && \
+    x86_64-w64-mingw32-dlltool -d /tmp/pathcch.def -l /usr/x86_64-w64-mingw32/lib/libpathcch.a -k && \
+    i686-w64-mingw32-dlltool -d /tmp/pathcch.def -l /usr/i686-w64-mingw32/lib/libpathcch.a -k && \
+    rm -f /tmp/pathcch.def && \
+    pip install --no-cache-dir --upgrade meson && \
     git clone --depth 1 https://github.com/felipeerias/clangd-mcp-server /opt/clangd-mcp-server && \
     cd /opt/clangd-mcp-server && npm install && npm run build
 

@@ -157,3 +157,22 @@ This document stores persistent context, key decisions, ongoing progress, and no
       - `lug-helper.sh --version`, `--show-directories`, and `--about` ran cleanly.
       - Executed `sc-launch.sh shell` and ran Wine commands inside the launch shell with zero GLIBC errors.
     - Created [`.agents/references/notes/`](file:///workspaces/lug-wine-experimental/.agents/references/notes/README.md) and documented deployment and execution procedures in [`lug_helper_runner_deployment_and_execution.md`](file:///workspaces/lug-wine-experimental/.agents/references/notes/lug_helper_runner_deployment_and_execution.md).
+
+
+### Session 11 — 2026-11-08
+- **User Request**:
+  - Review repository and validate changes needed for Star Citizen.
+  - Preserve previous Wine 11.19 `main` state in a reference branch (`wine-11.19-glibc-2.35`).
+  - Sync `main` with upstream (`11.20` / `11.21`), update `patches` and `wine-tkg-git` submodules, rebuild `vkd3d-proton` (`v3.0.1`) and `staging-default` Wine runner for GLIBC 2.35, validate, and deploy via `deploy-to-lug-helper.sh`.
+- **Actions Taken**:
+  - Created reference branch `wine-11.19-glibc-2.35` at commit `a8a27e8`.
+  - Merged `upstream/main` (`1109b79`) into `main` (without committing per git rules) and updated submodules:
+    - `patches` -> `92a8eaf` (updated `sc_gpumem.patch`, `0002-wineopenxr_enable.patch`, added `winewayland-disable-ime.patch`).
+    - `wine-tkg-git` -> `65d846c8` (Proton & LAA patches rebased against Wine 11.21).
+  - Provisioned `mingw-w64-tools`, upgraded `meson` to 1.12.1, and generated `libpathcch.a` import libs; persisted these in `.devcontainer/Dockerfile` and `check_deps.sh`.
+  - Built `vkd3d-proton` `v3.0.1` for 64-bit (`x64`) and 32-bit (`x86`).
+  - Built `lug-wine-tkg-staging-experimental-git-11.21-1.tar.gz` (`staging-default`, Wine 11.21, WoW64, GLIBC 2.35).
+  - Validated `11.21-1`:
+    - `audit_glibc.sh`: 48 ELF binaries checked, 0 symbols > GLIBC 2.35 (**100% PASS**).
+    - `verify_prefix.sh`: WoW64 `system32`/`syswow64`, `HideWineExports`, EAC dummy DLLs (`devobj.dll`, `drvstore.dll`), VKD3D-Proton DLLs, and `wine`/`wine64` execution (**100% PASS**).
+  - Deployed `lug-wine-tkg-staging-experimental-git-11.21-1` via `deploy-to-lug-helper.sh` to `/lug-helper/runners/`, `/home/tarfy/Games/star-citizen/runners/`, and updated `wine_path` in `/home/tarfy/Games/star-citizen/sc-launch.sh`.
