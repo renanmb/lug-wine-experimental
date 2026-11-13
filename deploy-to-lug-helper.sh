@@ -16,12 +16,26 @@ elif [ ! -d "${LUG_HELPER_DIR}" ] && [ -d "/lug-helper" ]; then
     LUG_HELPER_DIR="/lug-helper"
 fi
 
-SC_GAMES_DIR="${HOME}/Games/star-citizen"
-if [ ! -d "${SC_GAMES_DIR}" ] && [ -d "/home/tarfy/Games/star-citizen" ]; then
-    SC_GAMES_DIR="/home/tarfy/Games/star-citizen"
+HOST_USER="tarfy"
+HOST_HOME="/home/${HOST_USER}"
+if [ -d "${HOST_HOME}/Games/star-citizen" ]; then
+    SC_GAMES_DIR="${HOST_HOME}/Games/star-citizen"
+else
+    SC_GAMES_DIR="${HOME}/Games/star-citizen"
 fi
-HOST_GAMES_DIR="/home/tarfy/Games/star-citizen"
-LUTRIS_RUNNERS_DIR="${HOME}/.local/share/lutris/runners/wine"
+HOST_GAMES_DIR="${HOST_HOME}/Games/star-citizen"
+if [ -d "${HOST_HOME}" ]; then
+    LUTRIS_RUNNERS_DIR="${HOST_HOME}/.local/share/lutris/runners/wine"
+else
+    LUTRIS_RUNNERS_DIR="${HOME}/.local/share/lutris/runners/wine"
+fi
+
+fix_ownership() {
+    local target="$1"
+    if [ "$(id -u)" -eq 0 ] && id "${HOST_USER}" &>/dev/null && [ -e "${target}" ]; then
+        chown -R "${HOST_USER}:${HOST_USER}" "${target}"
+    fi
+}
 
 echo "======================================================="
 echo " Deploying LUG Wine Runner to LUG Helper"
@@ -50,9 +64,12 @@ RUNNER_NAME="$(basename "${TARGET_TARBALL}" .tar.gz)"
 if [ -d "${LUG_HELPER_DIR}" ]; then
     echo "Deploying to LUG Helper runners directory..."
     mkdir -p "${LUG_HELPER_DIR}/runners/${RUNNER_NAME}"
-    tar -xzf "${TARGET_TARBALL}" -C "${LUG_HELPER_DIR}/runners/"
+    tar --no-same-owner -xzf "${TARGET_TARBALL}" -C "${LUG_HELPER_DIR}/runners/"
     cp -f "${TARGET_TARBALL}" "${LUG_HELPER_DIR}/runners/"
     [ -f "${SHA_FILE}" ] && cp -f "${SHA_FILE}" "${LUG_HELPER_DIR}/runners/"
+    fix_ownership "${LUG_HELPER_DIR}/runners/${RUNNER_NAME}"
+    fix_ownership "${LUG_HELPER_DIR}/runners/$(basename "${TARGET_TARBALL}")"
+    [ -f "${SHA_FILE}" ] && fix_ownership "${LUG_HELPER_DIR}/runners/$(basename "${SHA_FILE}")"
     echo "  [OK] Deployed to ${LUG_HELPER_DIR}/runners/${RUNNER_NAME}"
 else
     echo "Note: LUG Helper repository directory not found at ${LUG_HELPER_DIR}. Skipping copy to repository."
@@ -61,13 +78,15 @@ fi
 # 3. Deploy to Star Citizen prefix runners
 echo "Deploying to Star Citizen prefix (${SC_GAMES_DIR}/runners)..."
 mkdir -p "${SC_GAMES_DIR}/runners"
-tar -xzf "${TARGET_TARBALL}" -C "${SC_GAMES_DIR}/runners/"
+tar --no-same-owner -xzf "${TARGET_TARBALL}" -C "${SC_GAMES_DIR}/runners/"
+fix_ownership "${SC_GAMES_DIR}/runners/${RUNNER_NAME}"
 echo "  [OK] Deployed to ${SC_GAMES_DIR}/runners/${RUNNER_NAME}"
 
 # 4. Deploy to Lutris wine runners
 echo "Deploying to Lutris Wine runners (${LUTRIS_RUNNERS_DIR})..."
 mkdir -p "${LUTRIS_RUNNERS_DIR}"
-tar -xzf "${TARGET_TARBALL}" -C "${LUTRIS_RUNNERS_DIR}/"
+tar --no-same-owner -xzf "${TARGET_TARBALL}" -C "${LUTRIS_RUNNERS_DIR}/"
+fix_ownership "${LUTRIS_RUNNERS_DIR}"
 echo "  [OK] Deployed to ${LUTRIS_RUNNERS_DIR}/${RUNNER_NAME}"
 
 # 5. Configure sc-launch.sh if present
@@ -75,6 +94,7 @@ SC_LAUNCH="${SC_GAMES_DIR}/sc-launch.sh"
 if [ -f "${SC_LAUNCH}" ]; then
     echo "Updating wine_path in ${SC_LAUNCH}..."
     sed -i "s|^export wine_path=.*|export wine_path=\"${HOST_GAMES_DIR}/runners/${RUNNER_NAME}/bin\"|" "${SC_LAUNCH}"
+    fix_ownership "${SC_LAUNCH}"
     echo "  [OK] Updated sc-launch.sh to target ${RUNNER_NAME}"
 fi
 

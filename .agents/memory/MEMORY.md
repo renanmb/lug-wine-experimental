@@ -176,3 +176,20 @@ This document stores persistent context, key decisions, ongoing progress, and no
     - `audit_glibc.sh`: 48 ELF binaries checked, 0 symbols > GLIBC 2.35 (**100% PASS**).
     - `verify_prefix.sh`: WoW64 `system32`/`syswow64`, `HideWineExports`, EAC dummy DLLs (`devobj.dll`, `drvstore.dll`), VKD3D-Proton DLLs, and `wine`/`wine64` execution (**100% PASS**).
   - Deployed `lug-wine-tkg-staging-experimental-git-11.21-1` via `deploy-to-lug-helper.sh` to `/lug-helper/runners/`, `/home/tarfy/Games/star-citizen/runners/`, and updated `wine_path` in `/home/tarfy/Games/star-citizen/sc-launch.sh`.
+
+
+### Session 12 — 2026-11-13
+- **User Request**:
+  - Star Citizen updated (`4.10.3-live.13165946`) and the previous `11.21-1` build no longer worked (`Fatal Error Thrown: Required Vulkan API Version not available` / `[VK] No valid Discrete GPU found`). Rebuild a new runner and update LUG Helper integration.
+- **Actions Taken**:
+  - Diagnosed root causes from `Game.log`, `sc-launch.log`, upstream `lug-wine-experimental`, and `/lug-helper`:
+    1. Upstream `starcitizen-lug/lug-wine-experimental` pushed `05de375` (`add d3dkmt-sync-getfd for vkd3d-proton vulkan display path`, `patches` `e5e2dd9`) after our Nov 8 `11.21-1` build. Without `d3dkmt_sync_get_fd` in `server/d3dkmt.c`, Star Citizen's Vulkan renderer (`GraphicsRenderer: 1`) failed VKD3D-Proton display path sync FD export.
+    2. Multi-GPU host (`NVIDIA RTX PRO 6000 Blackwell`, headless `NVIDIA-G0`, `AMD RADV RAPHAEL_MENDOCINO`, `llvmpipe`) needed `VK_DRIVER_FILES` restricted to NVIDIA's ICD plus `DXVK_FILTER_DEVICE_NAME="NVIDIA RTX PRO 6000"` and `VKD3D_FILTER_DEVICE_NAME="NVIDIA RTX PRO 6000"` in `sc-launch.sh`.
+    3. Upstream `starcitizen-lug/lug-helper` released `v4.18` (`dfea2c9`, excluding Wayland builds from default runner search).
+  - Synced `patches` submodule to `e5e2dd9` and added `"d3dkmt-sync-getfd"` to `build-lug-wine.sh`.
+  - Cleanly rebuilt `vkd3d-proton` `v3.0.1` (`x64` and `x86` `d3d12.dll` and `d3d12core.dll`).
+  - Built `lug-wine-tkg-staging-experimental-git-11.21-2.tar.gz` (`staging-default`, Wine 11.21, 22 LUG patches, WoW64, GLIBC 2.35).
+  - Validated `11.21-2`:
+    - `verify_prefix.sh`: WoW64, `HideWineExports`, EAC dummy DLLs, VKD3D-Proton DLLs, 32/64-bit `cmd.exe` (**100% PASS**).
+    - `audit_glibc.sh`: 48 ELF files checked, 0 symbols > GLIBC 2.35 (**100% PASS**).
+  - Merged upstream `lug-helper` `v4.18` (`dfea2c9`) into `/lug-helper` without committing (per git rules), hardened `deploy-to-lug-helper.sh` for container-to-host `/home/tarfy` paths and `tarfy:tarfy` ownership, deployed `11.21-2`, refreshed the live prefix via `wineboot -u`, and updated `sc-launch.sh` GPU filters.
