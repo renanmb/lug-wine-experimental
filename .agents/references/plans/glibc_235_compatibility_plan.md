@@ -5,7 +5,7 @@
 **Objective**: Create, verify, and package a standalone version of the **LUG-Wine-TKG runner** tailored for Star Citizen that runs natively on **Ubuntu 22.04.5 LTS** (GLIBC 2.35) and is optimized for the host system's **`7.2.9-zabbly+` custom kernel**.
 
 ### The Technical Problem
-Upstream CI builds in [`.github/workflows/build-artifacts.yml`](file:///workspaces/lug-wine-experimental/.github/workflows/build-artifacts.yml) are pinned to **`ubuntu:24.04`**, producing binaries tied to **`glibc >= 2.39`**. Because GNU C Library (`glibc`) symbols are backward-compatible but **strictly not forward-compatible**, those release binaries fail to execute on systems with `glibc 2.35`, crashing on startup with missing symbol errors (e.g., `version GLIBC_2.38 not found`).
+Upstream CI builds in [`.github/workflows/build-artifacts.yml`](../../../.github/workflows/build-artifacts.yml) are pinned to **`ubuntu:24.04`**, producing binaries tied to **`glibc >= 2.39`**. Because GNU C Library (`glibc`) symbols are backward-compatible but **strictly not forward-compatible**, those release binaries fail to execute on systems with `glibc 2.35`, crashing on startup with missing symbol errors (e.g., `version GLIBC_2.38 not found`).
 
 To deliver a functioning runner for this system, we must establish a build pipeline that compiles the runner and companion libraries against **GLIBC <= 2.35**, while taking full advantage of the kernel features in `7.2.9-zabbly+` (such as `futex_waitv` for Fsync and `PREEMPT_DYNAMIC`).
 
@@ -28,26 +28,26 @@ To deliver a functioning runner for this system, we must establish a build pipel
 2. **Ntsync Status & Safety**:
    - Upstream kernel UAPI header [`ntsync.h`](file:///usr/local/include/linux/ntsync.h) is installed in `/usr/local/include/linux/ntsync.h` to satisfy compilation dependencies.
    - However, `/dev/ntsync` is not exposed in the devcontainer environment.
-   - **Crucial Rule**: Keep `_use_ntsync="false"` in [`config/lug-wine-tkg-*.cfg`](file:///workspaces/lug-wine-experimental/config) to prevent runtime failures when `/dev/ntsync` is absent.
+   - **Crucial Rule**: Keep `_use_ntsync="false"` in [`config/lug-wine-tkg-*.cfg`](../../../config/lug-wine-tkg-staging-default.cfg) to prevent runtime failures when `/dev/ntsync` is absent.
 
 ---
 
 ## 3. Inventory of Equipped Skills & MCP Servers
 
 ### Agent Skills
-The following specialized skills in [`.agents/skills/`](file:///workspaces/lug-wine-experimental/.agents/skills/) are active:
+The following specialized skills in [`.agents/skills/`](../../skills/README.md) are active:
 
 | Skill | Path | Objective & Script |
 | :--- | :--- | :--- |
-| [**`glibc-compatibility-auditor`**](file:///workspaces/lug-wine-experimental/.agents/skills/glibc-compatibility-auditor/SKILL.md) | [`.agents/skills/glibc-compatibility-auditor/`](file:///workspaces/lug-wine-experimental/.agents/skills/glibc-compatibility-auditor) | Uses [`audit_glibc.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/glibc-compatibility-auditor/scripts/audit_glibc.sh) to inspect all ELF `.so` libraries and verify symbol versions do not exceed `GLIBC_2.35`. |
-| [**`ubuntu-2204-build-environment-provisioner`**](file:///workspaces/lug-wine-experimental/.agents/skills/ubuntu-2204-build-environment-provisioner/SKILL.md) | [`.agents/skills/ubuntu-2204-build-environment-provisioner/`](file:///workspaces/lug-wine-experimental/.agents/skills/ubuntu-2204-build-environment-provisioner) | Uses [`check_deps.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/ubuntu-2204-build-environment-provisioner/scripts/check_deps.sh) to verify 19 tools and development packages including MinGW-w64 (`x86_64` & `i686`), GStreamer, Vulkan, OpenXR, Wayland, and `ntsync.h`. |
-| [**`vkd3d-proton-glibc235-builder`**](file:///workspaces/lug-wine-experimental/.agents/skills/vkd3d-proton-glibc235-builder/SKILL.md) | [`.agents/skills/vkd3d-proton-glibc235-builder/`](file:///workspaces/lug-wine-experimental/.agents/skills/vkd3d-proton-glibc235-builder) | Instructions to build VKD3D-Proton DirectX 12 PE DLLs under Ubuntu 22.04 with MinGW-w64 8.0 compatibility workarounds (`PATHCCH_NONE`). |
-| [**`c-build-and-patch-debugger`**](file:///workspaces/lug-wine-experimental/.agents/skills/c-build-and-patch-debugger/SKILL.md) | [`.agents/skills/c-build-and-patch-debugger/`](file:///workspaces/lug-wine-experimental/.agents/skills/c-build-and-patch-debugger) | Triages GCC 11 compilation flags, Wine `.spec` export alignment, and patch conflicts. |
-| [**`wine-patch-validator`**](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/SKILL.md) | [`.agents/skills/wine-patch-validator/`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator) | Uses [`validate_patches.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/wine-patch-validator/scripts/validate_patches.sh) to test syntax of all 34 community patches in [`patches/wine/`](file:///workspaces/lug-wine-experimental/patches/wine). |
-| [**`tkg-config-auditor`**](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/SKILL.md) | [`.agents/skills/tkg-config-auditor/`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor) | Uses [`audit_config.sh`](file:///workspaces/lug-wine-experimental/.agents/skills/tkg-config-auditor/scripts/audit_config.sh) to ensure `_NOLIB32="wow64"` is configured across all presets. |
+| [**`glibc-compatibility-auditor`**](../../skills/glibc-compatibility-auditor/SKILL.md) | [`.agents/skills/glibc-compatibility-auditor/`](../../skills/glibc-compatibility-auditor/SKILL.md) | Uses [`audit_glibc.sh`](../../skills/glibc-compatibility-auditor/scripts/audit_glibc.sh) to inspect all ELF `.so` libraries and verify symbol versions do not exceed `GLIBC_2.35`. |
+| [**`ubuntu-2204-build-environment-provisioner`**](../../skills/ubuntu-2204-build-environment-provisioner/SKILL.md) | [`.agents/skills/ubuntu-2204-build-environment-provisioner/`](../../skills/ubuntu-2204-build-environment-provisioner/SKILL.md) | Uses [`check_deps.sh`](../../skills/ubuntu-2204-build-environment-provisioner/scripts/check_deps.sh) to verify 19 tools and development packages including MinGW-w64 (`x86_64` & `i686`), GStreamer, Vulkan, OpenXR, Wayland, and `ntsync.h`. |
+| [**`vkd3d-proton-glibc235-builder`**](../../skills/vkd3d-proton-glibc235-builder/SKILL.md) | [`.agents/skills/vkd3d-proton-glibc235-builder/`](../../skills/vkd3d-proton-glibc235-builder/SKILL.md) | Instructions to build VKD3D-Proton DirectX 12 PE DLLs under Ubuntu 22.04 with MinGW-w64 8.0 compatibility workarounds (`PATHCCH_NONE`). |
+| [**`c-build-and-patch-debugger`**](../../skills/c-build-and-patch-debugger/SKILL.md) | [`.agents/skills/c-build-and-patch-debugger/`](../../skills/c-build-and-patch-debugger/SKILL.md) | Triages GCC 11 compilation flags, Wine `.spec` export alignment, and patch conflicts. |
+| [**`wine-patch-validator`**](../../skills/wine-patch-validator/SKILL.md) | [`.agents/skills/wine-patch-validator/`](../../skills/wine-patch-validator/SKILL.md) | Uses [`validate_patches.sh`](../../skills/wine-patch-validator/scripts/validate_patches.sh) to test syntax of all 34 community patches in [`patches/wine/`](../../../patches/README.md). |
+| [**`tkg-config-auditor`**](../../skills/tkg-config-auditor/SKILL.md) | [`.agents/skills/tkg-config-auditor/`](../../skills/tkg-config-auditor/SKILL.md) | Uses [`audit_config.sh`](../../skills/tkg-config-auditor/scripts/audit_config.sh) to ensure `_NOLIB32="wow64"` is configured across all presets. |
 
 ### Active MCP Servers
-Configured in [`.agents/mcp_config.json`](file:///workspaces/lug-wine-experimental/.agents/mcp_config.json):
+Configured in [`.agents/mcp_config.json`](../../mcp_config.json):
 - **`clangd`**: Semantic AST navigation, header resolution, diagnostics for C codebase.
 - **`debugger`**: Attaches GDB 12.1 for backtraces and crash diagnostics.
 - **`git`**: Scoped git repository inspection.
@@ -139,14 +139,14 @@ Mandatory packages on Ubuntu 22.04:
 5. Confirm output in `build/vkd3d-proton-master/x64/` and `x86/` contains `d3d12.dll` and `dxgi.dll`.
 
 ### Step 3: Compile Runner Locally with Wine-TKG
-Execute [`build-lug-wine.sh`](file:///workspaces/lug-wine-experimental/build-lug-wine.sh) specifying the target preset and version matching the rebased patches (Wine 11.19):
+Execute [`build-lug-wine.sh`](../../../build-lug-wine.sh) specifying the target preset and version matching the rebased patches (Wine 11.19):
 ```bash
 ./build-lug-wine.sh --preset default --version 11.19 --revision 1 -d ./vkd3d-proton/build/vkd3d-proton-master
 ```
 Key Build Behaviors:
 - Wine-TKG clones Wine 11.19 into temporary build directory `wine-tkg-build-tmp-XXXXXX`.
 - Applies Wine-Staging patches (if staging preset is selected).
-- Applies all 21 LUG user patches from [`patches/wine/`](file:///workspaces/lug-wine-experimental/patches/wine) (including [`10.2+_eac_fix.patch`](file:///workspaces/lug-wine-experimental/patches/wine/10.2+_eac_fix.patch) for EAC `wine64` loader compatibility).
+- Applies all 21 LUG user patches from [`patches/wine/`](../../../patches/README.md) (including [`10.2+_eac_fix.patch`](../../../patches/wine/10.2+_eac_fix.patch) for EAC `wine64` loader compatibility).
 - Automatically links Unix libraries against host `libc.so.6` (**GLIBC 2.35**).
 - Copies VKD3D-Proton PE DLLs and registers them as Wine builtins using `winebuild --builtin`.
 - Packages artifact into `output/lug-wine-*.tar.gz`.
@@ -163,7 +163,7 @@ Success criteria:
 - Windows PE `.dll` files in `lib/wine/x86_64-windows/` and `i386-windows/` are ignored by ELF checks (they execute in Wine's Windows PE subsystem).
 
 ### Step 5: CI Matrix Adaptation (Optional Release Automation)
-To automate community releases without local CPU consumption, expand [`.github/workflows/build-artifacts.yml`](file:///workspaces/lug-wine-experimental/.github/workflows/build-artifacts.yml):
+To automate community releases without local CPU consumption, expand [`.github/workflows/build-artifacts.yml`](../../../.github/workflows/build-artifacts.yml):
 ```yaml
 strategy:
   matrix:
@@ -193,6 +193,6 @@ This produces dual runner releases:
 | **VKD3D-Proton MinGW 8.0 Bug** | `PATHCCH_NONE` undeclared in MinGW 8.0 headers on Ubuntu 22.04 | Handled via `sed -i 's/PATHCCH_NONE/0/g'` documented in `vkd3d-proton-glibc235-builder`. |
 | **Ntsync Compatibility** | Kernel 7.2.9 lacks `/dev/ntsync` in devcontainer | Header provided in `/usr/local/include/linux/ntsync.h`; `_use_ntsync="false"` kept in config to avoid runtime failures. |
 | **Fsync Compatibility** | Kernel 7.2.9 supports `futex_waitv` (Linux 5.16+) | Host kernel natively supports Fsync syscall 449; works automatically when `WINEFSYNC=1` is passed to the runner. |
-| **EAC Loader Compatibility** | WoW64 typically outputs single `wine` binary; EAC requires `wine64` | Addressed by [`10.2+_eac_fix.patch`](file:///workspaces/lug-wine-experimental/patches/wine/10.2+_eac_fix.patch) and Wine-TKG WoW64 symlink generation. |
-| **Wine Version Alignment** | Incompatible Wine versions cause patch rejects | Aligned build baseline to Wine **11.19** matching submodule commit [`01a904b`](file:///workspaces/lug-wine-experimental/patches). |
+| **EAC Loader Compatibility** | WoW64 typically outputs single `wine` binary; EAC requires `wine64` | Addressed by [`10.2+_eac_fix.patch`](../../../patches/wine/10.2+_eac_fix.patch) and Wine-TKG WoW64 symlink generation. |
+| **Wine Version Alignment** | Incompatible Wine versions cause patch rejects | Aligned build baseline to Wine **11.19** matching submodule commit [`01a904b`](../../../patches/README.md). |
 | **Build Directory Trapping** | `build-lug-wine.sh` removes temporary build tree on exit | Documented that build logs should be observed with `_log_errors_to_file="true"` if debugging compiler issues. |

@@ -31,15 +31,19 @@ A **TKG Wine Runner** in this project refers to a standalone, portable Wine buil
 
 ```
 lug-wine-experimental/
-├── build-lug-wine.sh              # Core build orchestration script
+├── build-lug-wine.sh              # Core build orchestration script (auto-builds vkd3d-proton & applies custom-patches)
+├── deploy-to-lug-helper.sh        # Automated runner deployment script
 ├── config/                        # Wine-TKG configuration files for presets
 │   ├── lug-wine-tkg-default.cfg
 │   ├── lug-wine-tkg-staging-default.cfg
 │   ├── lug-wine-tkg-staging-wayland.cfg
 │   └── lug-wine-tkg-wayland.cfg
+├── custom-patches/                # Git-tracked custom fork patches
+│   └── wine/                      # Custom .patch files (override or extend patches/wine/)
 ├── patches/                       # Git submodule: starcitizen-lug/patches
-│   └── wine/                      # Custom Wine patches for Star Citizen
+│   └── wine/                      # Upstream Wine patches for Star Citizen
 ├── wine-tkg-git/                  # Git submodule: Frogging-Family/wine-tkg-git
+├── .devcontainer/                 # Ubuntu 22.04 (GLIBC 2.35) devcontainer & toolchain
 ├── .github/workflows/             # CI workflows for containerized builds
 │   ├── build-artifacts.yml
 │   ├── build-vkd3d-proton.yml
@@ -101,8 +105,14 @@ These patches address specific quirks, bottlenecks, and anti-cheat requirements 
 
 ## Agent References Index
 
-- [**Plans Index (`plans/README.md`)**](file:///workspaces/lug-wine-experimental/.agents/references/plans/README.md):
-  - [Wine-TKG Skills & MCP Architecture Plan](file:///workspaces/lug-wine-experimental/.agents/references/plans/wine_tkg_skills_and_mcp_plan.md)
-  - [GLIBC 2.35 Build & Compatibility Plan](file:///workspaces/lug-wine-experimental/.agents/references/plans/glibc_235_compatibility_plan.md)
-- [**Notes Index (`notes/README.md`)**](file:///workspaces/lug-wine-experimental/.agents/references/notes/README.md):
-  - [LUG Helper Runner Deployment & Execution Guide](file:///workspaces/lug-wine-experimental/.agents/references/notes/lug_helper_runner_deployment_and_execution.md)
+- [**Documentation Index (`docs/README.md`)**](./docs/README.md):
+  - [1. Architecture & What We Built](./docs/01_architecture_and_what_we_built.md)
+  - [2. Git Tracking & Version Control Strategy](./docs/02_git_tracking_and_version_control_strategy.md)
+  - [3. Replication & Clean OS Install Guide](./docs/03_replication_and_clean_install_guide.md)
+- [**Plans Index (`plans/README.md`)**](./plans/README.md):
+  - [Wine-TKG Skills & MCP Architecture Plan](./plans/wine_tkg_skills_and_mcp_plan.md)
+  - [GLIBC 2.35 Build & Compatibility Plan](./plans/glibc_235_compatibility_plan.md)
+- [**Notes Index (`notes/README.md`)**](./notes/README.md):
+  - [LUG Helper Runner Deployment & Execution Guide](./notes/lug_helper_runner_deployment_and_execution.md)
+  - [Star Citizen Graphics, Vulkan & Launch Troubleshooting](./notes/star_citizen_graphics_vulkan_and_launch_troubleshooting.md)
+  - [Repository Structure, Core Directories, and Submodule Management](./notes/repository_structure_and_submodules.md)

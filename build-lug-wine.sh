@@ -5,6 +5,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WINE_TKG_SRC="$SCRIPT_DIR/wine-tkg-git"
 PATCHES_DIR="$SCRIPT_DIR/patches/wine"
+CUSTOM_PATCHES_DIR="$SCRIPT_DIR/custom-patches/wine"
+VKD3D_PROTON_SRC="$SCRIPT_DIR/vkd3d-proton"
+VKD3D_PROTON_VERSION="${VKD3D_PROTON_VERSION:-v3.0.1}"
 TMP_BUILD_DIR="$SCRIPT_DIR/wine-tkg-build-tmp-$(mktemp -u XXXXXX)"
 
 ######### error codes ################################################
@@ -53,8 +56,32 @@ parse_adhoc() {
   patches+=("${adhoc[@]}")
 }
 
+ensure_vkd3d_proton() {
+  if [ -f "$vkd3d_build_dir/x64/d3d12.dll" ] && [ -f "$vkd3d_build_dir/x86/d3d12.dll" ]; then
+    echo "Using existing vkd3d-proton build at $vkd3d_build_dir"
+    return 0
+  fi
+
+  echo "vkd3d-proton build not found at $vkd3d_build_dir; building vkd3d-proton ($VKD3D_PROTON_VERSION)..."
+  if [ ! -d "$VKD3D_PROTON_SRC/.git" ]; then
+    git clone --depth 1 --recursive --branch "$VKD3D_PROTON_VERSION" \
+      https://github.com/HansKristian-Work/vkd3d-proton.git "$VKD3D_PROTON_SRC"
+  fi
+
+  if [ -f "$VKD3D_PROTON_SRC/libs/vkd3d-common/platform.c" ]; then
+    sed -i 's/PATHCCH_NONE/0/g' "$VKD3D_PROTON_SRC/libs/vkd3d-common/platform.c"
+  fi
+
+  (
+    cd "$VKD3D_PROTON_SRC"
+    ./package-release.sh master build --no-package
+  )
+  echo "vkd3d-proton ($VKD3D_PROTON_VERSION) built successfully at $vkd3d_build_dir"
+}
+
 override_to_vkd3d_proton() {
-  if [ -d $vkd3d_build_dir ]; then
+  ensure_vkd3d_proton
+  if [ -d "$vkd3d_build_dir" ]; then
     built_dir="$(find ./non-makepkg-builds -maxdepth 1 -type d -name 'wine-*' -printf '%f\n' | head -n1)"
     if [[ -z "$built_dir" ]]; then
       echo "No build directory found in non-makepkg-builds/"
@@ -108,10 +135,27 @@ prepare_preset() {
 
   mkdir -p ./wine-tkg-userpatches
   for file in "${patches[@]}"; do
-    cp "$PATCHES_DIR/$file.patch" "./wine-tkg-userpatches/${file}.mypatch"
+    if [ -f "$CUSTOM_PATCHES_DIR/$file.patch" ]; then
+      cp "$CUSTOM_PATCHES_DIR/$file.patch" "./wine-tkg-userpatches/${file}.mypatch"
+      echo "Applied custom override patch: custom-patches/wine/${file}.patch"
+    else
+      cp "$PATCHES_DIR/$file.patch" "./wine-tkg-userpatches/${file}.mypatch"
+    fi
   done
 
-  echo "Copied LUG patches to ./wine-tkg-userpatches/"
+  if [ -d "$CUSTOM_PATCHES_DIR" ]; then
+    shopt -s nullglob
+    for custom_patch in "$CUSTOM_PATCHES_DIR"/*.patch; do
+      custom_name="$(basename "$custom_patch" .patch)"
+      if [ ! -f "./wine-tkg-userpatches/${custom_name}.mypatch" ]; then
+        cp "$custom_patch" "./wine-tkg-userpatches/${custom_name}.mypatch"
+        echo "Added custom patch: custom-patches/wine/${custom_name}.patch"
+      fi
+    done
+    shopt -u nullglob
+  fi
+
+  echo "Copied LUG and custom patches to ./wine-tkg-userpatches/"
 
   if [ -n "$wine_version" ]; then
     sed -i "s/staging_version=\"\"/staging_version=\"v$wine_version\"/" "$TMP_BUILD_DIR/$config"
@@ -202,6 +246,7 @@ if [ "$#" -gt 0 ]; then
     done
 fi
 
+ensure_vkd3d_proton
 prepare_preset
 build_lug_wine
 post_build_add_overrides

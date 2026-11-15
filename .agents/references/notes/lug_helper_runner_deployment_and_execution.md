@@ -15,7 +15,7 @@ To manually deploy the compiled Wine runner archive into the local `lug-helper` 
 mkdir -p /home/tarfy/Documents/GitHub/renanmb/lug-helper/runners/lug-wine-tkg-custom-2.35
 
 # 2. Extract the compiled build artifact into the runners folder
-tar -xzf /workspaces/lug-wine-experimental/output/lug-wine-*.tar.gz \
+tar -xzf /home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/output/lug-wine-*.tar.gz \
     -C /home/tarfy/Documents/GitHub/renanmb/lug-helper/runners/lug-wine-tkg-custom-2.35 \
     --strip-components=1
 ```
@@ -23,7 +23,7 @@ tar -xzf /workspaces/lug-wine-experimental/output/lug-wine-*.tar.gz \
 > [!NOTE]
 > If extracting an archive that already contains a top-level directory (e.g. `lug-wine-tkg-staging-experimental-git-11.19-1/`), you can extract directly into `runners/`:
 > ```bash
-> tar -xzf /workspaces/lug-wine-experimental/output/lug-wine-*.tar.gz \
+> tar -xzf /home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/output/lug-wine-*.tar.gz \
 >     -C /home/tarfy/Documents/GitHub/renanmb/lug-helper/runners/
 > ```
 
@@ -34,26 +34,26 @@ LUG Helper and Lutris search specific standard directories for installed runners
 ```bash
 # Deploy to Star Citizen game prefix runners directory
 mkdir -p ~/Games/star-citizen/runners
-tar -xzf /workspaces/lug-wine-experimental/output/lug-wine-*.tar.gz \
+tar -xzf /home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/output/lug-wine-*.tar.gz \
     -C ~/Games/star-citizen/runners/
 
 # Deploy to Lutris Wine runners directory
 mkdir -p ~/.local/share/lutris/runners/wine
-tar -xzf /workspaces/lug-wine-experimental/output/lug-wine-*.tar.gz \
+tar -xzf /home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/output/lug-wine-*.tar.gz \
     -C ~/.local/share/lutris/runners/wine/
 ```
 
 ### Automated Deployment Script
 
 An automated script is provided in this repository:
-[`deploy-to-lug-helper.sh`](file:///workspaces/lug-wine-experimental/deploy-to-lug-helper.sh)
+[`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh)
 
 Run it from the workspace root:
 ```bash
 ./deploy-to-lug-helper.sh
 ```
 This script:
-1. Validates the SHA256 checksum of the latest archive in [`output/`](file:///workspaces/lug-wine-experimental/output/).
+1. Validates the SHA256 checksum of the latest archive in [`output/`](../../../output/RELEASE_NOTES.md).
 2. Deploys the runner into `/home/tarfy/Documents/GitHub/renanmb/lug-helper/runners/`.
 3. Deploys to `~/Games/star-citizen/runners/` and `~/.local/share/lutris/runners/wine/`.
 4. Updates `wine_path` in `~/Games/star-citizen/sc-launch.sh`.

@@ -7,12 +7,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 PATCHES_DIR="$WORKSPACE_ROOT/patches/wine"
+CUSTOM_PATCHES_DIR="$WORKSPACE_ROOT/custom-patches/wine"
 TARGET_GIT_DIR="${1:-$WORKSPACE_ROOT/wine-tkg-git}"
 
 echo "======================================================="
 echo " Wine Patch Validator"
-echo " Patches directory: $PATCHES_DIR"
-echo " Target repository: $TARGET_GIT_DIR"
+echo " Patches directory:        $PATCHES_DIR"
+echo " Custom patches directory: $CUSTOM_PATCHES_DIR"
+echo " Target repository:        $TARGET_GIT_DIR"
 echo "======================================================="
 
 if [ ! -d "$PATCHES_DIR" ]; then
@@ -23,7 +25,7 @@ fi
 patches_checked=0
 failed_patches=0
 
-for patch in "$PATCHES_DIR"/*.patch; do
+for patch in "$PATCHES_DIR"/*.patch "$CUSTOM_PATCHES_DIR"/*.patch; do
   [ -e "$patch" ] || continue
   patch_name=$(basename "$patch")
   patches_checked=$((patches_checked + 1))

@@ -16,10 +16,10 @@ This plan outlines the identification, evaluation, setup, and deployment of spec
 > - **Host Compiler**: GCC 11.4.0
 
 ### Critical Compatibility Analysis: GLIBC 2.35 vs GLIBC 2.39
-- **Upstream Pre-built Runners**: Compiled in GitHub Actions (`.github/workflows/build-artifacts.yml`) on **Ubuntu 24.04**, with a hard minimum requirement of **`glibc >= 2.39`** (released 2024-01-31, as documented in [`README.md`](file:///workspaces/lug-wine-experimental/README.md)).
+- **Upstream Pre-built Runners**: Compiled in GitHub Actions (`.github/workflows/build-artifacts.yml`) on **Ubuntu 24.04**, with a hard minimum requirement of **`glibc >= 2.39`** (released 2024-01-31, as documented in [`README.md`](../../../README.md)).
 - **Binary Compatibility Reality**: Because Linux `glibc` is backward-compatible but **not forward-compatible**, pre-compiled release artifacts built on Ubuntu 24.04 will refuse to run on this host system, erroring out with missing glibc symbols (e.g. `version GLIBC_2.38 not found`).
 - **Development & Build Strategy**:
-  1. **Native Local Builds**: If we compile Wine locally on this host using [`build-lug-wine.sh`](file:///workspaces/lug-wine-experimental/build-lug-wine.sh), the resulting runner will link against **GLIBC 2.35**, allowing it to execute natively on this Ubuntu 22.04 system.
+  1. **Native Local Builds**: If we compile Wine locally on this host using [`build-lug-wine.sh`](../../../build-lug-wine.sh), the resulting runner will link against **GLIBC 2.35**, allowing it to execute natively on this Ubuntu 22.04 system.
   2. **Release / CI Artifacts**: If building artifacts meant for the community repository targeting Ubuntu 24.04 (`glibc >= 2.39`), builds must be delegated to GitHub Actions or an isolated Ubuntu 24.04 container.
   3. **Kernel Advantages**: The custom **`7.2.9-zabbly+`** kernel delivers modern kernel primitives—including fast futex2 synchronization (`Fsync`), updated scheduler features, and recent GPU driver compatibility—giving high-performance capabilities for running Wine.
 
@@ -82,18 +82,18 @@ MCP servers equip the agent with external protocol integrations, allowing it to 
 
 ## 4. Required Agent Skills (Procedural Capabilities)
 
-Skills are reproducible, structured agent workflows housed in [`.agents/skills/`](file:///workspaces/lug-wine-experimental/.agents/skills/).
+Skills are reproducible, structured agent workflows housed in [`.agents/skills/`](../../skills/README.md).
 
 ### Skill 1: `wine-patch-validator`
 - **Objective**: Validate whether community `.patch` files apply cleanly against a designated upstream Wine or Wine-Staging commit/tag before initiating a full compilation.
 - **Workflow**:
   1. Clone or checkout target Wine version in an isolated scratch directory.
-  2. Run `git apply --check` or simulated dry-run for all patches in [`patches/wine/`](file:///workspaces/lug-wine-experimental/patches/wine).
+  2. Run `git apply --check` or simulated dry-run for all patches in [`patches/wine/`](../../../patches/README.md).
   3. Detect rejected chunks (`.rej`), offsets, and fuzz.
   4. Output detailed diagnostics and propose rebased patch diffs.
 
 ### Skill 2: `tkg-config-auditor`
-- **Objective**: Audit local LUG configuration files ([`config/lug-wine-tkg-*.cfg`](file:///workspaces/lug-wine-experimental/config)) against the latest upstream `wine-tkg-git` template (`customization.cfg`).
+- **Objective**: Audit local LUG configuration files ([`config/lug-wine-tkg-*.cfg`](../../../config/lug-wine-tkg-staging-default.cfg)) against the latest upstream `wine-tkg-git` template (`customization.cfg`).
 - **Workflow**:
   1. Fetch the latest `customization.cfg` from upstream `wine-tkg-git`.
   2. Parse and compare configuration keys.
@@ -173,6 +173,6 @@ flowchart LR
 5. Create `runner-binary-inspector/` and `release-packager-and-hasher/`.
 
 ### Phase 4: Integration Verification (Day 8)
-1. Perform dry-run validation using the newly authored skills on an existing patch from [`patches/wine/`](file:///workspaces/lug-wine-experimental/patches/wine).
-2. Validate that the strict agent rules ([`.agents/rules/rules.md`](file:///workspaces/lug-wine-experimental/.agents/rules/rules.md)) are honored during all automated procedures.
-3. Update session memory in [`.agents/memory/MEMORY.md`](file:///workspaces/lug-wine-experimental/.agents/memory/MEMORY.md).
+1. Perform dry-run validation using the newly authored skills on an existing patch from [`patches/wine/`](../../../patches/README.md).
+2. Validate that the strict agent rules ([`.agents/rules/rules.md`](../../rules/rules.md)) are honored during all automated procedures.
+3. Update session memory in [`.agents/memory/MEMORY.md`](../../memory/MEMORY.md).

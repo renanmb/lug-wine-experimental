@@ -30,7 +30,7 @@ These rules are mandatory for all AI agents working within this repository.
 2. **Directory Sanitation**:
    - Temporary build directories (`wine-tkg-build-tmp-*`) should be cleaned up according to the script's traps. Avoid creating temporary files outside designated build/artifact paths.
 3. **Preserve Configuration Integrity**:
-   - Do not overwrite configuration profiles in [`config/`](file:///workspaces/lug-wine-experimental/config) unless implementing a specifically requested feature or fix.
+   - Do not overwrite configuration profiles in [`config/`](../../config/lug-wine-tkg-staging-default.cfg) unless implementing a specifically requested feature or fix.
 
 ---
 
@@ -39,5 +39,6 @@ These rules are mandatory for all AI agents working within this repository.
 1. **Comments and Documentation**:
    - Preserve existing comments and docstrings.
    - Keep scripts portable and aligned with Bash best practices (`set -e`, proper quotation of variables).
-2. **Link Transparency**:
-   - Always provide direct clickable file links when referencing project paths or code symbols.
+2. **Link Transparency & Markdown File Links**:
+   - In repository Markdown (`.md`) files, always use **relative paths pointing to actual files** (e.g., `[build-lug-wine.sh](../../../build-lug-wine.sh#L136-L157)` or `[custom-patches/wine/](../../../custom-patches/wine/README.md)`) rather than `file://` URLs or bare directory paths, so links open cleanly in the editor, Markdown preview (both host and devcontainer), and on GitHub.
+   - When writing full filesystem paths in documentation text or shell commands, use the real host path (`/home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/...`).

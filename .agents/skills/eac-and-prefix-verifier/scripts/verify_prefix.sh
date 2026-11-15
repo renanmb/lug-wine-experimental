@@ -4,7 +4,9 @@
 
 set -euo pipefail
 
-RUNNER_INPUT="${1:-/workspaces/lug-wine-experimental/output/lug-wine-tkg-staging-experimental-git-11.19-1.tar.gz}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+RUNNER_INPUT="${1:-$(find "${WORKSPACE_ROOT}/output" -name "lug-wine-*.tar.gz" -type f 2>/dev/null | sort -V | tail -n 1)}"
 TEMP_EXTRACT=""
 CLEANUP_EXTRACT=0
 
