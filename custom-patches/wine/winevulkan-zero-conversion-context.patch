@@ -1,0 +1,55 @@
+From: LUG-Wine-Experimental <lug-wine-experimental@localhost>
+Subject: [PATCH] winevulkan: Zero-initialize conversion_context allocations
+
+When converting Vulkan struct chains (such as VkPhysicalDeviceProperties2 or
+VkPhysicalDeviceFeatures2) from Windows to host in winevulkan thunks, output
+extension structs marked returnedonly="true" in vk.xml (for example,
+VkPhysicalDeviceLayeredDriverPropertiesMSFT) are allocated via
+conversion_context_alloc() with only sType and pNext initialized.
+
+Per the Vulkan specification, host drivers that do not implement an extension
+in a pNext chain ignore the unrecognized structure and leave its fields
+untouched. Because conversion_context_alloc() previously returned uninitialized
+stack/heap memory, convert_*_host_to_win64/win32 subsequently copied uninitialized
+garbage back over the caller's zero-initialized struct.
+
+In Star Citizen 4.10+, CGPUPhysicalDeviceVulkan::GetPhysicalDeviceInfos() chains
+a zero-initialized VkPhysicalDeviceLayeredDriverPropertiesMSFT struct to
+vkGetPhysicalDeviceProperties2 and disqualifies any physical device whose
+underlyingAPI != VK_LAYERED_DRIVER_UNDERLYING_API_NONE_MSFT (0), causing all
+discrete GPUs to be rejected ("[VK] No valid Discrete GPU found") and crashing
+with STATUS_CRYENGINE_FATAL_ERROR (0x2BADF00D).
+
+Zero-initialize allocations in conversion_context_alloc() so unsupported pNext
+output structs preserve zeroed fields instead of leaking stack/heap garbage.
+---
+ dlls/winevulkan/vulkan_private.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/winevulkan/vulkan_private.h b/dlls/winevulkan/vulkan_private.h
+index 06932593b21..8f9d6042a1b 100644
+--- a/dlls/winevulkan/vulkan_private.h
++++ b/dlls/winevulkan/vulkan_private.h
+@@ -21,6 +21,7 @@
+ #define __WINE_VULKAN_PRIVATE_H
+ 
+ #include <pthread.h>
++#include <string.h>
+ 
+ #include "vulkan_loader.h"
+ #include "vulkan_thunks.h"
+@@ -87,12 +88,13 @@ static inline void *conversion_context_alloc(struct conversion_context *pool, si
+     {
+         void *ret = pool->buffer + pool->used;
+         pool->used += (size + sizeof(UINT64) - 1) & ~(sizeof(UINT64) - 1);
++        memset(ret, 0, size);
+         return ret;
+     }
+     else
+     {
+         struct list *entry;
+-        if (!(entry = malloc(sizeof(*entry) + size)))
++        if (!(entry = calloc(1, sizeof(*entry) + size)))
+             return NULL;
+         list_add_tail(&pool->alloc_entries, entry);
+         return entry + 1;

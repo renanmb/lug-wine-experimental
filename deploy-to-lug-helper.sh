@@ -32,8 +32,14 @@ fi
 
 fix_ownership() {
     local target="$1"
-    if [ "$(id -u)" -eq 0 ] && id "${HOST_USER}" &>/dev/null && [ -e "${target}" ]; then
-        chown -R "${HOST_USER}:${HOST_USER}" "${target}"
+    if [ "$(id -u)" -eq 0 ] && [ -e "${target}" ]; then
+        if id "${HOST_USER}" &>/dev/null; then
+            chown -R "${HOST_USER}:${HOST_USER}" "${target}"
+        elif [ -d "${SC_GAMES_DIR}" ]; then
+            chown -R "$(stat -c '%u:%g' "${SC_GAMES_DIR}")" "${target}"
+        else
+            chown -R 1000:1000 "${target}"
+        fi
     fi
 }
 
@@ -55,7 +61,7 @@ if [ -f "${SHA_FILE}" ]; then
     (cd "$(dirname "${TARGET_TARBALL}")" && sha256sum -c "$(basename "${SHA_FILE}")")
 else
     echo "Warning: Checksum file ${SHA_FILE} not found. Generating..."
-    sha256sum "${TARGET_TARBALL}" > "${SHA_FILE}"
+    (cd "$(dirname "${TARGET_TARBALL}")" && sha256sum "$(basename "${TARGET_TARBALL}")" > "$(basename "${SHA_FILE}")")
 fi
 
 RUNNER_NAME="$(basename "${TARGET_TARBALL}" .tar.gz)"

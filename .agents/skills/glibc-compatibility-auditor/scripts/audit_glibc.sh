@@ -62,8 +62,27 @@ check_file() {
   done
 }
 
+TMP_EXTRACT_DIR=""
+cleanup() {
+  if [ -n "$TMP_EXTRACT_DIR" ] && [ -d "$TMP_EXTRACT_DIR" ]; then
+    rm -rf "$TMP_EXTRACT_DIR"
+  fi
+}
+trap cleanup EXIT
+
 if [ -f "$TARGET_PATH" ]; then
-  check_file "$TARGET_PATH"
+  case "$TARGET_PATH" in
+    *.tar.gz|*.tgz|*.tar.xz|*.tar.zst)
+      TMP_EXTRACT_DIR="$(mktemp -d /tmp/glibc-audit-XXXXXX)"
+      tar -xf "$TARGET_PATH" -C "$TMP_EXTRACT_DIR"
+      while IFS= read -r -d '' f; do
+        check_file "$f"
+      done < <(find "$TMP_EXTRACT_DIR" -type f \( -name "*.so*" -o -perm /111 \) -print0)
+      ;;
+    *)
+      check_file "$TARGET_PATH"
+      ;;
+  esac
 elif [ -d "$TARGET_PATH" ]; then
   while IFS= read -r -d '' f; do
     check_file "$f"
