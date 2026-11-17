@@ -63,7 +63,28 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y --no-in
     libxcursor-dev libxcursor-dev:i386 \
     libxi-dev libxi-dev:i386 \
     libxxf86vm-dev libxxf86vm-dev:i386 \
-    # Audio, input, and system headers
+    libxcomposite-dev libxcomposite-dev:i386 \
+    libxrender-dev libxrender-dev:i386 \
+    libxfixes-dev libxfixes-dev:i386 \
+    # Audio, video, input, and system headers
+    libavcodec-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libswresample-dev \
+    libv4l-dev \
+    libva-dev \
+    libkrb5-dev \
+    ocl-icd-opencl-dev \
+    libcups2-dev \
+    libosmesa6-dev \
+    libcapi20-dev \
+    libgphoto2-dev \
+    libsane-dev \
+    oss4-dev \
+    unixodbc-dev \
+    samba-dev \
+    gettext \
+    gawk \
     libasound2-dev libasound2-dev:i386 \
     libpulse-dev libpulse-dev:i386 \
     libudev-dev libudev-dev:i386 \
