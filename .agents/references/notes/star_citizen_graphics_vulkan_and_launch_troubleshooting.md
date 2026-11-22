@@ -8,8 +8,9 @@ This guide documents the root causes, diagnostic logs, and solutions for the com
 
 | Issue | Manifestation / Error Message | Root Cause | Solution |
 | :--- | :--- | :--- | :--- |
-| **`sc-launch.sh` Silent Exit** | Launcher window does not open; log says `DXVK: No adapters found. Please check your device filter settings` | Restrictive `DXVK_FILTER_DEVICE_NAME` + laptop Optimus variables breaking desktop GLX | Set `DXVK_FILTER_DEVICE_NAME="NVIDIA"` and remove Optimus offload variables |
-| **Vulkan API Version Crash** | Pop-up: `Vulkan API version for chosen GPU Device is less than Vulkan 1.2...`; `Fatal Error Thrown: Required Vulkan API Version not available` | In-game native Vulkan renderer fails device selection under `winevulkan` | Force DirectX 11 (DXVK) via `user.cfg` and `GraphicsSettings.json` |
+| **`sc-launch.sh` Silent Exit** | Launcher window does not open; log says `DXVK: No adapters found. Please check your device filter settings` | Restrictive `DXVK_FILTER_DEVICE_NAME` + laptop Optimus variables breaking desktop GLX | Set `DXVK_FILTER_DEVICE_NAME="NVIDIA RTX PRO 6000"` and remove Optimus offload variables |
+| **RSI Launcher Black Screen** | Launcher window opens and resizes (`1440×900`) with working background logs, but renders solid black | `winex11.so` compiled without `libxcomposite-dev` (`SONAME_LIBXCOMPOSITE`), leaving Electron child-HWND Vulkan surfaces unredirected | Build with `libxcomposite-dev` and `--with-xcomposite` (`11.22-2+`); verified by `verify_prefix.sh` |
+| **Vulkan API Version Crash** | Pop-up: `Vulkan API version for chosen GPU Device is less than Vulkan 1.2...`; `Fatal Error Thrown: Required Vulkan API Version not available` | Uninitialized `VkPhysicalDeviceLayeredDriverPropertiesMSFT` memory in `winevulkan` (`< 11.22-1`) disqualifying discrete GPUs | Resolved in `11.22-2+` via [`winevulkan-zero-conversion-context.patch`](../../../custom-patches/wine/winevulkan-zero-conversion-context.patch) and [`d3dkmt-sync-getfd.patch`](../../../patches/wine/d3dkmt-sync-getfd.patch) (or fallback to DX11 via `GraphicsRenderer: 0`) |
 | **Crash Loop After Changing Settings** | Game crashes on boot after changing resolution or window mode in the options menu | The in-game Graphics menu saves `GraphicsRenderer: 1` upon applying changes, taking precedence on next launch | Reset `GraphicsRenderer: 0` in `GraphicsSettings.json` |
 | **Mouse Escaping in Windowed Mode** | Cursor drifts out of the window when navigating menus (Mobiglas, inventory) | Windowed mode (`WindowMode = 1`) unclips cursor during UI interaction | Rely on in-game auto-lock during gameplay, or enable Wine's `GrabPointer` registry setting |
 
@@ -172,4 +173,52 @@ When diagnosing game startup or graphics issues, check these files in order:
    ```bash
    cat ~/Games/star-citizen/drive_c/users/tarfy/AppData/Local/star\ citizen/*/GraphicsSettings/GraphicsSettings.json
    ```
-   *Ensure:* `"GraphicsRenderer": 0`.
+   *Note:* `"GraphicsRenderer": 1` uses Native Vulkan (supported in `11.22-2+`); `"GraphicsRenderer": 0` uses DirectX 11 (DXVK).
+
+---
+
+## 7. Debugging Visual Glitches Using Screenshots
+
+When reporting in-game rendering bugs, shader artifacts, missing textures, or UI glitches to the AI agent, providing screenshots allows the agent to visually inspect the artifact and correlate it against engine and Vulkan logs.
+
+### Why `PrintScreen` Files Need to Be Copied
+On Ubuntu/GNOME, pressing `PrintScreen` in-game is intercepted by the host desktop environment and saved to:
+- **Host Capture Path:** `/home/tarfy/Pictures/Screenshots/`
+
+Because [`.devcontainer/devcontainer.json`](../../../.devcontainer/devcontainer.json) only bind-mounts `/home/tarfy/Games` and `/lug-helper` (and not `/home/tarfy/Pictures`), files left in `/home/tarfy/Pictures/Screenshots/` are not visible inside the devcontainer.
+
+### Recommended Screenshot Folder
+Copy screenshots into:
+- **Primary Folder:** `/home/tarfy/Games/star-citizen/screenshots/`
+  - Easily accessible in Ubuntu Files (`Home` $\rightarrow$ `Games` $\rightarrow$ `star-citizen` $\rightarrow$ `screenshots`).
+  - Automatically visible inside the devcontainer at the exact same path (`/home/tarfy/Games/star-citizen/screenshots/`).
+  - Outside the Git repository, so screenshots never clutter `git status` or risk being committed.
+- **Alternative (VS Code Explorer Drag-and-Drop):** `/home/tarfy/Documents/GitHub/renanmb/lug-wine-experimental/output/screenshots/`
+  - Already ignored by Git via `output/` in [`.gitignore`](../../../.gitignore).
+- **Direct Chat Upload:** You can also paste (`Ctrl+V`) or drag-and-drop images directly into the chat prompt.
+
+### Step-by-Step Workflow for Debugging Visual Glitches
+
+1. **(Optional) Enable In-Game Renderer Overlay Before Capturing:**
+   Open the Star Citizen console (`~`) and run:
+   ```text
+   r_DisplayInfo = 3
+   ```
+   This stamps the active renderer (`Vulkan` vs `D3D11`), GPU memory, frame timings, and build info directly into the corner of the screenshot.
+
+2. **Capture and Copy the Screenshot:**
+   Press `PrintScreen`, then either copy-paste the image in Ubuntu Files from `~/Pictures/Screenshots/` into `~/Games/star-citizen/screenshots/`, or run on the host:
+   ```bash
+   mkdir -p /home/tarfy/Games/star-citizen/screenshots
+   cp -p /home/tarfy/Pictures/Screenshots/* /home/tarfy/Games/star-citizen/screenshots/
+   ```
+   > [!TIP]
+   > Using `cp -p` (or GUI copy-paste) preserves the file's timestamp so the agent can match the exact second the screenshot was taken against `<YYYY-MM-DDTHH:MM:SSZ>` entries in `LIVE/Game.log`.
+
+3. **Prompt the Agent:**
+   Tell the agent to check `/home/tarfy/Games/star-citizen/screenshots/` (or specify the filename) and briefly note what was happening (e.g., *"flickering volumetric clouds on Vulkan"*, *"black MFD panels"*, *"corrupted shadows"*).
+
+4. **What the Agent Checks Automatically:**
+   - Reads the image(s) in `/home/tarfy/Games/star-citizen/screenshots/` to classify the failure mode (e.g., descriptor/UBO corruption, NaN shader bloom, depth/stencil precision, X11/Wayland compositing, or stale shader cache).
+   - Cross-references `/home/tarfy/Games/star-citizen/drive_c/Program Files/Roberts Space Industries/StarCitizen/LIVE/Game.log` and `/home/tarfy/Games/star-citizen/sc-launch.log` around the screenshot timestamp.
+   - Checks active `GraphicsSettings.json`, `LIVE/user.cfg`, `winevulkan` / DXVK / VKD3D-Proton behavior, and shader caches (`/home/tarfy/Games/star-citizen/GLCache` and `AppData/Local/star citizen/*/shaders/`).

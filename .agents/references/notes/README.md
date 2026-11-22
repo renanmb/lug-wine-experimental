@@ -17,6 +17,7 @@ This directory contains technical notes, operational guides, and deployment work
    - Resolution for settings reset crash loops (`GraphicsSettings.json` vs `attributes.xml`).
    - Configuration steps for custom resolutions (e.g., 2560×1440 Windowed mode).
    - Mouse capture behavior and optional confinement configuration in Wine.
+   - Screenshot-based visual glitch debugging workflow and target folder (`/home/tarfy/Games/star-citizen/screenshots/`).
 
 3. [**`repository_structure_and_submodules.md`**](./repository_structure_and_submodules.md):
    - Overview of the repository architecture, build presets, and fork purpose (Ubuntu 22.04 / GLIBC 2.35 support).
