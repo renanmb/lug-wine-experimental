@@ -56,8 +56,11 @@ This script:
 1. Validates the SHA256 checksum of the latest archive in [`output/`](../../../output/RELEASE_NOTES.md).
 2. Deploys the runner into `/home/tarfy/Documents/GitHub/renanmb/lug-helper/runners/`.
 3. Deploys to `~/Games/star-citizen/runners/` and `~/.local/share/lutris/runners/wine/`.
-4. Updates `wine_path` in `~/Games/star-citizen/sc-launch.sh`.
+4. Updates `wine_path` in `~/Games/star-citizen/sc-launch.sh`, ensures the `SC_VIRTUAL_CABLE` (`PULSE_SINK=virtspk`) OBS audio-isolation block is present, and enforces Native Vulkan (`GraphicsRenderer = 1`).
 5. Verifies binary execution (`wine --version`).
+
+> [!TIP]
+> By default (`SC_VIRTUAL_CABLE=1`), `~/Games/star-citizen/sc-launch.sh` automatically verifies/initializes the host `virtspk` virtual cable and sets `PULSE_SINK=virtspk` for OBS Studio audio isolation (use `SC_VIRTUAL_CABLE=0 ~/Games/star-citizen/sc-launch.sh` to bypass). For Lutris (`Method 3` below) and OBS setup details, see [`04_audio_isolation_and_obs_streaming_guide.md`](../docs/04_audio_isolation_and_obs_streaming_guide.md).
 
 ---
 

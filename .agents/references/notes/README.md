@@ -27,4 +27,4 @@ This directory contains technical notes, operational guides, and deployment work
 4. [**`virtual_cable_audio_isolation_and_sc_launch_integration.md`**](./virtual_cable_audio_isolation_and_sc_launch_integration.md):
    - Cross-repository handoff from `Virtual-Cables-Linux` for isolating `lug-wine-experimental` / Star Citizen audio onto `Virtual_Speaker` (`PULSE_SINK=virtspk`) via `winepulse.drv`.
    - Exact host terminal (`Option A`), `sc-launch.sh` (`Option B` / `SC_VIRTUAL_CABLE`), and Lutris (`Option C`) configurations plus mandatory VOIP and post-reboot audio invariants.
-   - Implementation checklist for `sc-launch.sh`, `deploy-to-lug-helper.sh`, `winepulse.so` build/smoke-test guardrails (`--with-pulse`), and `.agents` multi-assistant alignment.
+   - Live session troubleshooting log (`pactl move-sink-input` live isolation), `winepulse.so` `PA_STREAM_DONT_MOVE` analysis, and roadmap for improving dynamic PulseAudio sink management later.

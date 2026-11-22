@@ -12,7 +12,8 @@ Bootstraps an isolated temporary `WINEPREFIX` with a built LUG Wine runner to ve
 3. Custom LUG registry keys (`reg_hide_wine.patch`, `HideWineExports`) and dummy DLLs (`devobj.dll`, `drvstore.dll`) are created.
 4. VKD3D-Proton DirectX 12 PE DLLs (`d3d12.dll`, `d3d12core.dll`) are properly present in both `system32` and `syswow64`.
 5. `winex11.so` contains XComposite offscreen child-window redirection (`libXcomposite.so` / `XCompositeRedirectWindow`), preventing black windows in Electron/Chromium apps such as RSI Launcher.
-6. Both `wine` and `wine64` loaders execute Windows commands (`cmd.exe`) successfully.
+6. `winepulse.so` is compiled and linked against `libpulse.so.0` (`pa_stream_connect_playback`), guaranteeing PulseAudio virtual-cable isolation (`PULSE_SINK=virtspk`) works for OBS streaming.
+7. Both `wine` and `wine64` loaders execute Windows commands (`cmd.exe`) successfully.
 
 ## When to Use
 - Immediately after compiling or downloading a Wine runner package.

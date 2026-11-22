@@ -59,14 +59,14 @@ parse_adhoc() {
 verify_host_headers() {
   if command -v pkg-config >/dev/null 2>&1; then
     local missing_pc=()
-    for mod in x11 xext xcomposite xrender xfixes xrandr xinerama xcursor xi vulkan wayland-client xkbcommon gstreamer-1.0; do
+    for mod in x11 xext xcomposite xrender xfixes xrandr xinerama xcursor xi vulkan wayland-client xkbcommon gstreamer-1.0 libpulse alsa; do
       if ! pkg-config --exists "$mod" 2>/dev/null; then
         missing_pc+=("$mod")
       fi
     done
     if [ "${#missing_pc[@]}" -gt 0 ]; then
       echo "ERROR: Missing required development pkg-config modules: ${missing_pc[*]}" >&2
-      echo "       Ensure libxcomposite-dev, libxrender-dev, libxfixes-dev, and X11/Vulkan/Wayland/GStreamer dev headers are installed before building." >&2
+      echo "       Ensure libxcomposite-dev, libxrender-dev, libxfixes-dev, libpulse-dev, libasound2-dev, and X11/Vulkan/Wayland/GStreamer dev headers are installed before building." >&2
       exit 1
     fi
   fi

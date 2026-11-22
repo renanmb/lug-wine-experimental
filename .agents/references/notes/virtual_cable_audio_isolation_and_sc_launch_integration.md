@@ -112,3 +112,69 @@ When implementing this handoff from inside `/home/tarfy/Documents/GitHub/renanmb
 3. Consume the isolated feed:
    - **OBS Studio**: Mute/disable `Desktop Audio` and add **Audio Output Capture (PulseAudio)** -> **`Virtual_Speaker`** (or **Audio Input Capture** -> **`Virtual_Microphone`**). Run `virtual-cables-pulseaudio.sh restart --no-loopback` if monitoring via OBS to avoid double local playback.
    - **Discord / Zoom / Jitsi**: Set **Input Device / Microphone** to **`Virtual_Microphone`**.
+
+---
+
+## 6. Live Session Diagnosis, Workaround & Sink-Management Roadmap (2026-11-22)
+
+### 6.1 What Was Implemented
+1. **Launch & Deployment Integration**:
+   - Added the `pactl`-guarded `SC_VIRTUAL_CABLE` (`PULSE_SINK="virtspk"`) block and `[sc-launch] SC_VIRTUAL_CABLE=... PULSE_SINK=...` log header to `/home/tarfy/Games/star-citizen/sc-launch.sh` (`1000:1000`).
+   - Updated [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh#L98-L136) to idempotently preserve/seed `SC_VIRTUAL_CABLE` across runner deployments.
+2. **Build & Smoke-Test Guardrails**:
+   - Added `libpulse` and `alsa` preflight checks to [`build-lug-wine.sh`](../../../build-lug-wine.sh#L59-L73), `--with-pulse` across all 4 presets in [`config/lug-wine-tkg-staging-default.cfg`](../../../config/lug-wine-tkg-staging-default.cfg#L158-L160) (and sibling `.cfg` files), and `winepulse.so` (`libpulse.so.0` / `pa_stream_connect_playback`) verification to [`verify_prefix.sh`](../../skills/eac-and-prefix-verifier/scripts/verify_prefix.sh#L149-L164).
+   - Authored end-to-end audio & OBS documentation in [`04_audio_isolation_and_obs_streaming_guide.md`](../docs/04_audio_isolation_and_obs_streaming_guide.md).
+
+### 6.2 What Happened During Live Testing (Why Audio Stayed on `Sink: 2` Initially)
+When inspecting the live host PulseAudio state while Star Citizen was running:
+
+```text
+1  alsa_output.usb-Generic_USB_Audio-00.iec958-stereo                       IDLE
+2  alsa_output.usb-C-Media_Electronics_Inc._USB_Audio_Device-00.analog-stereo RUNNING
+3  alsa_output.pci-0000_01_00.1.hdmi-stereo                                 IDLE
+4  virtspk (module-null-sink.c)                                             IDLE
+---
+Sink Input #17   -> Sink: 2   (Virtual_Speaker_Loopback; has media.name, no application.name)
+Sink Input #104  -> Sink: 2   (application.name = "Star Citizen", binary = "wine64-preloader")
+```
+
+- **Immediate Live Fix Applied**:
+  Moving the active `Star Citizen` stream (`Sink Input #104`) onto `virtspk` (`Sink: 4`) immediately isolated game audio without restarting the game:
+  ```bash
+  pactl move-sink-input 104 virtspk
+  ```
+  Post-move verification confirmed clean three-way separation:
+  - `Sink Input #104` (`Star Citizen`) $\rightarrow$ `Sink: 4` (`virtspk`, captured exclusively by OBS `Virtual_Speaker`).
+  - `Sink Input #107` (`Chromium`) $\rightarrow$ `Sink: 2` (`USB_Audio_Device`, excluded from OBS).
+  - `Sink Input #17` (`Virtual_Speaker_Loopback`) $\rightarrow$ `Sink: 2` (`USB_Audio_Device`, local headphone monitoring).
+
+- **Reusable One-Liner (No Need to Look Up `#104` Manually)**:
+  Because PulseAudio sink-input numbers change every session, use this command to move an already-running Star Citizen stream onto `virtspk` by name:
+  ```bash
+  pactl list sink-inputs | awk '/Sink Input #/{id=substr($3,2)} /application\.name = "Star Citizen"/{print id}' | xargs -r -n1 -I{} pactl move-sink-input {} virtspk
+  ```
+  And to inspect all active streams **including** loopback names (`media.name`):
+  ```bash
+  pactl list short sinks && echo "---" && pactl list sink-inputs | grep -E "Sink Input|Sink:|flags:|media\.name|application\.name|application\.process\.binary"
+  ```
+
+### 6.3 Root Causes in How Audio Sinks Are Currently Managed
+1. **`PULSE_SINK` Is Launch-Time Only (Does Not Retroactively Move Running Processes)**:
+   - `PULSE_SINK=virtspk` is only read when `RSI Launcher.exe` / `wineserver` starts. If RSI Launcher or Star Citizen was started before `virtspk` / `sc-launch.sh` had `PULSE_SINK=virtspk` (or if clicking *Launch Game* from an older backgrounded RSI Launcher instance), `StarCitizen.exe` inherits the old environment and attaches to the host default sink (`Sink: 2`).
+2. **Ephemeral Numeric Sink & Sink-Input IDs + Blank `application.name` on Loopbacks**:
+   - PulseAudio sink indices (`2`, `4`) and sink-input IDs (`#17`, `#104`) change across reboots and stream restarts, and `module-loopback` (`Sink Input #17`) only populates `media.name` (not `application.name`), making raw `pactl` checks harder to read at a glance.
+3. **`winepulse.so` `PA_STREAM_DONT_MOVE` (`0x0200`) Trap on Non-Default In-Game Devices**:
+   - Disassembly of `11.22-2` `winepulse.so` (`get_endpoint_ids` at `0x3e30` and `pulse_stream_connect` at `0x81ba`) confirmed:
+     - When Star Citizen is left on **Default** (`[0,]` `"Speakers (PulseAudio Output)"`), `winepulse.so` passes `dev = NULL` with flags `0x12001` (no `DONT_MOVE`), so **both** `PULSE_SINK=virtspk` and `pactl move-sink-input` work.
+     - If a specific hardware output is ever chosen inside Star Citizen's in-game Audio menu, `winepulse.so` passes that explicit ALSA sink name with `0x12201` (`PA_STREAM_DONT_MOVE`), which overrides `PULSE_SINK` and causes `pactl move-sink-input` to fail with `Failure: Invalid argument`.
+4. **Static `module-loopback` Target Sink When Switching Headset $\leftrightarrow$ Speakers**:
+   - `Virtual_Speaker_Loopback` (`Sink Input #17`) stays pinned to whichever physical sink was default when `virtual-cables-pulseaudio.sh` initialized, requiring either `virtual-cables-pulseaudio.sh restart` or moving the loopback sink-input when switching between USB headset and desk/HDMI speakers.
+
+### 6.4 How to Fix Sink Management Cleanly Later
+When revisiting sink management (in `Virtual-Cables-Linux` and/or `sc-launch.sh` subcommands), implement a dedicated sink-routing controller:
+1. **Event-Driven / Post-Launch Auto-Mover (`pactl subscribe` or `sc-launch.sh audio-isolate`)**:
+   - Automatically detect `Star Citizen` (`application.name = "Star Citizen"`) sink-inputs on creation (or on demand) and move them to `virtspk` by sink name, so audio isolation works even if Star Citizen was launched from an already-open RSI Launcher or Lutris without restarting the game.
+2. **Human-Readable `audio-status` Command**:
+   - Resolve numeric `Sink: <N>` IDs directly to sink names (`virtspk` vs `USB_Audio_Device` vs `HDMI`) and print both `application.name` and `media.name` so `Star Citizen`, `Virtual_Speaker_Loopback`, and desktop apps (`Chromium`, `Discord`) are unmistakable.
+3. **One-Command Local Monitor Target Switcher (`audio-listen <headset|speakers|off>`)**:
+   - Move only the `module-loopback` (`source=virtspk.monitor`) sink-input between physical sinks (USB headset, USB speakers, HDMI) without disturbing `virtspk` or OBS Studio.

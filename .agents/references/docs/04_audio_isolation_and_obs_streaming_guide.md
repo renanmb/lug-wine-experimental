@@ -80,24 +80,29 @@ PulseAudio's `module-stream-restore` remembers per-application sink assignments 
   PULSE_SINK=virtspk /home/tarfy/Games/star-citizen/sc-launch.sh
 ```
 
-### Option B: Automatic & Toggleable Integration in `sc-launch.sh` (Recommended)
-Place the guarded `SC_VIRTUAL_CABLE` block inside the `# ENVIRONMENT VARIABLES` section of `/home/tarfy/Games/star-citizen/sc-launch.sh`:
+### Option B: Automatic & Toggleable Integration in `sc-launch.sh` (Active Default)
+`/home/tarfy/Games/star-citizen/sc-launch.sh` (and [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh)) includes the `SC_VIRTUAL_CABLE` block inside `# ENVIRONMENT VARIABLES`:
 
 ```bash
-# Virtual audio cable isolation (1 = route game audio to Virtual_Speaker / virtspk, 0 = normal desktop audio)
+# Virtual audio cable isolation for OBS / streaming (1 = route game audio to Virtual_Speaker / virtspk, 0 = normal desktop audio)
 export SC_VIRTUAL_CABLE="${SC_VIRTUAL_CABLE:-1}"
-VIRTUAL_CABLE_SCRIPT="/home/tarfy/Documents/GitHub/renanmb/Virtual-Cables-Linux/virtual-cables-pulseaudio.sh"
-if [ "${SC_VIRTUAL_CABLE}" = "1" ] && [ -x "${VIRTUAL_CABLE_SCRIPT}" ]; then
-    if "${VIRTUAL_CABLE_SCRIPT}" >/dev/null 2>&1; then
+if [ "${SC_VIRTUAL_CABLE}" = "1" ] && command -v pactl >/dev/null 2>&1; then
+    VIRTUAL_CABLE_SCRIPT="/home/tarfy/Documents/GitHub/renanmb/Virtual-Cables-Linux/virtual-cables-pulseaudio.sh"
+    if ! pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx "virtspk"; then
+        if [ -f "${VIRTUAL_CABLE_SCRIPT}" ]; then
+            bash "${VIRTUAL_CABLE_SCRIPT}" >/dev/null 2>&1 || true
+        fi
+    fi
+    if pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx "virtspk"; then
         export PULSE_SINK="virtspk"
     fi
+    unset VIRTUAL_CABLE_SCRIPT
 fi
-unset VIRTUAL_CABLE_SCRIPT
 ```
 
-- **Standard isolated launch**: `/home/tarfy/Games/star-citizen/sc-launch.sh` (or your desktop shortcut) automatically initializes `virtspk` after a reboot and isolates Star Citizen audio.
+- **Standard isolated launch**: `/home/tarfy/Games/star-citizen/sc-launch.sh` (or your LUG Helper desktop shortcut) verifies `virtspk` via `pactl`, auto-loads `virtual-cables-pulseaudio.sh` after a reboot if needed, exports `PULSE_SINK="virtspk"`, and records `[sc-launch] SC_VIRTUAL_CABLE=1 PULSE_SINK=virtspk` at the top of `/home/tarfy/Games/star-citizen/sc-launch.log`.
 - **One-off bypass (normal desktop audio)**: `SC_VIRTUAL_CABLE=0 /home/tarfy/Games/star-citizen/sc-launch.sh`.
-- **Deployment persistence**: [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh#L98-L105) preserves custom environment variables in `sc-launch.sh` when updating `export wine_path=...`, and can also seed this block idempotently alongside the Vulkan `GraphicsRenderer = 1` configuration.
+- **Deployment persistence**: [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh) idempotently ensures this `SC_VIRTUAL_CABLE` block remains in `sc-launch.sh` across runner redeployments alongside Vulkan `GraphicsRenderer = 1`.
 
 ### Option C: Lutris Runner Configuration
 If launching via Lutris (`~/.local/share/lutris/runners/wine`):
@@ -197,8 +202,11 @@ To guarantee future custom GLIBC 2.35 Wine builds never silently drop PulseAudio
 # 1. Check virtual sink, virtual mic, and loopback status on the host
 /home/tarfy/Documents/GitHub/renanmb/Virtual-Cables-Linux/virtual-cables-pulseaudio.sh status
 
-# 2. Confirm StarCitizen.exe sink assignment in PulseAudio
-pactl list sink-inputs
+# 2. List all sinks + which sink number Star Citizen, loopback (media.name), and browsers use
+pactl list short sinks && echo "---" && pactl list sink-inputs | grep -E "Sink Input|Sink:|flags:|media\.name|application\.name|application\.process\.binary"
+
+# 3. Move an already-running Star Citizen session onto virtspk live (without restarting the game)
+pactl list sink-inputs | awk '/Sink Input #/{id=substr($3,2)} /application\.name = "Star Citizen"/{print id}' | xargs -r -n1 -I{} pactl move-sink-input {} virtspk
 ```
 In `pavucontrol`:
 - **Playback** (*Show: Applications*) $\rightarrow$ `StarCitizen.exe` / `RSI Launcher.exe` is routed to **`Virtual_Speaker`**, while browsers/Discord remain on your physical headset or speakers.

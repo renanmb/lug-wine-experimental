@@ -95,13 +95,46 @@ tar --no-same-owner -xzf "${TARGET_TARBALL}" -C "${LUTRIS_RUNNERS_DIR}/"
 fix_ownership "${LUTRIS_RUNNERS_DIR}"
 echo "  [OK] Deployed to ${LUTRIS_RUNNERS_DIR}/${RUNNER_NAME}"
 
-# 5. Configure sc-launch.sh and enforce Vulkan as standard startup renderer
+# 5. Configure sc-launch.sh (wine_path, virtual cable audio isolation, and Vulkan renderer)
 SC_LAUNCH="${SC_GAMES_DIR}/sc-launch.sh"
 if [ -f "${SC_LAUNCH}" ]; then
-    echo "Updating wine_path in ${SC_LAUNCH}..."
+    echo "Updating wine_path and audio isolation config in ${SC_LAUNCH}..."
     sed -i "s|^export wine_path=.*|export wine_path=\"${HOST_GAMES_DIR}/runners/${RUNNER_NAME}/bin\"|" "${SC_LAUNCH}"
+    if ! grep -q 'SC_VIRTUAL_CABLE' "${SC_LAUNCH}"; then
+        python3 - "${SC_LAUNCH}" <<'PY'
+import sys
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as f:
+    content = f.read()
+block = """# Virtual audio cable isolation for OBS / streaming (1 = route game audio to Virtual_Speaker / virtspk, 0 = normal desktop audio)
+export SC_VIRTUAL_CABLE="${SC_VIRTUAL_CABLE:-1}"
+if [ "${SC_VIRTUAL_CABLE}" = "1" ] && command -v pactl >/dev/null 2>&1; then
+    VIRTUAL_CABLE_SCRIPT="/home/tarfy/Documents/GitHub/renanmb/Virtual-Cables-Linux/virtual-cables-pulseaudio.sh"
+    if ! pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx "virtspk"; then
+        if [ -f "${VIRTUAL_CABLE_SCRIPT}" ]; then
+            bash "${VIRTUAL_CABLE_SCRIPT}" >/dev/null 2>&1 || true
+        fi
+    fi
+    if pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx "virtspk"; then
+        export PULSE_SINK="virtspk"
+    fi
+    unset VIRTUAL_CABLE_SCRIPT
+fi
+
+"""
+anchor = "############################################################################\n# END ENVIRONMENT VARIABLES"
+if anchor in content:
+    content = content.replace(anchor, block + anchor, 1)
+else:
+    anchor2 = "##################\n# Wine binary path"
+    if anchor2 in content:
+        content = content.replace(anchor2, block + anchor2, 1)
+with open(path, "w", encoding="utf-8") as f:
+    f.write(content)
+PY
+    fi
     fix_ownership "${SC_LAUNCH}"
-    echo "  [OK] Updated sc-launch.sh to target ${RUNNER_NAME}"
+    echo "  [OK] Updated sc-launch.sh to target ${RUNNER_NAME} (with SC_VIRTUAL_CABLE support)"
 fi
 
 SC_INSTALL_ROOT="${SC_GAMES_DIR}/drive_c/Program Files/Roberts Space Industries/StarCitizen"

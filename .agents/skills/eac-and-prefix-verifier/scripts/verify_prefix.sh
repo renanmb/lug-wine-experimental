@@ -146,7 +146,24 @@ else
   test_passed=0
 fi
 
-# 7. Check cmd execution
+# 7. Check winepulse.so PulseAudio support (required for PULSE_SINK=virtspk virtual-cable audio isolation)
+echo ""
+echo "--- Verifying PulseAudio Driver Support (winepulse.so) ---"
+WINEPULSE_SO="$RUNNER_DIR/lib/wine/x86_64-unix/winepulse.so"
+if [ -f "$WINEPULSE_SO" ]; then
+  winepulse_strings="$(strings "$WINEPULSE_SO")"
+  if grep -q "libpulse.so.0" <<<"$winepulse_strings" && grep -q "pa_stream_connect_playback" <<<"$winepulse_strings"; then
+    echo "  [PASS] winepulse.so includes PulseAudio support (libpulse.so.0 / pa_stream_connect_playback)"
+  else
+    echo "  [FAIL] winepulse.so is missing libpulse.so.0 linkage!"
+    test_passed=0
+  fi
+else
+  echo "  [FAIL] $WINEPULSE_SO not found (PulseAudio support missing; PULSE_SINK=virtspk audio isolation will not work!)"
+  test_passed=0
+fi
+
+# 8. Check cmd execution
 echo ""
 echo "--- Testing Wine Command Execution ---"
 cmd_out=$("$WINE_BIN" cmd /c "echo Wine Prefix Execution OK" 2>/dev/null | tr -d '\r')
