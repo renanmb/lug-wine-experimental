@@ -95,7 +95,7 @@ tar --no-same-owner -xzf "${TARGET_TARBALL}" -C "${LUTRIS_RUNNERS_DIR}/"
 fix_ownership "${LUTRIS_RUNNERS_DIR}"
 echo "  [OK] Deployed to ${LUTRIS_RUNNERS_DIR}/${RUNNER_NAME}"
 
-# 5. Configure sc-launch.sh if present
+# 5. Configure sc-launch.sh and enforce Vulkan as standard startup renderer
 SC_LAUNCH="${SC_GAMES_DIR}/sc-launch.sh"
 if [ -f "${SC_LAUNCH}" ]; then
     echo "Updating wine_path in ${SC_LAUNCH}..."
@@ -103,6 +103,57 @@ if [ -f "${SC_LAUNCH}" ]; then
     fix_ownership "${SC_LAUNCH}"
     echo "  [OK] Updated sc-launch.sh to target ${RUNNER_NAME}"
 fi
+
+SC_INSTALL_ROOT="${SC_GAMES_DIR}/drive_c/Program Files/Roberts Space Industries/StarCitizen"
+for channel_dir in "${SC_INSTALL_ROOT}"/LIVE "${SC_INSTALL_ROOT}"/PTU "${SC_INSTALL_ROOT}"/EPTU "${SC_INSTALL_ROOT}"/TECH-PREVIEW; do
+    [ -d "${channel_dir}" ] || continue
+    cfg_file="${channel_dir}/user.cfg"
+    if [ -f "${cfg_file}" ]; then
+        if grep -qE '^[[:space:]]*r\.GraphicsRenderer[[:space:]]*=' "${cfg_file}"; then
+            sed -i -E 's|^[[:space:]]*r\.GraphicsRenderer[[:space:]]*=.*|r.GraphicsRenderer = 1|' "${cfg_file}"
+        else
+            printf '\nr.GraphicsRenderer = 1\n' >> "${cfg_file}"
+        fi
+    else
+        printf 'r.GraphicsRenderer = 1\n' > "${cfg_file}"
+    fi
+    fix_ownership "${cfg_file}"
+done
+
+if command -v python3 >/dev/null 2>&1; then
+    python3 - "${SC_GAMES_DIR}" <<'PY'
+import glob, json, os, sys
+prefix = sys.argv[1]
+for sc_dir in glob.glob(os.path.join(prefix, "drive_c", "users", "*", "AppData", "Local", "star citizen", "starcitizen_*")):
+    if not os.path.isdir(sc_dir):
+        continue
+    gs_dir = os.path.join(sc_dir, "GraphicsSettings")
+    os.makedirs(gs_dir, exist_ok=True)
+    gs_file = os.path.join(gs_dir, "GraphicsSettings.json")
+    data = {}
+    if os.path.isfile(gs_file):
+        try:
+            with open(gs_file, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            if isinstance(loaded, dict):
+                data = loaded
+        except Exception:
+            data = {}
+    gs = data.get("GraphicsSettings")
+    if not isinstance(gs, dict):
+        gs = {}
+    gs["SettingsVersion"] = 1
+    gs["GraphicsRenderer"] = 1
+    data["GraphicsSettings"] = gs
+    with open(gs_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+PY
+    for gs_dir in "${SC_GAMES_DIR}"/drive_c/users/*/AppData/Local/"star citizen"/starcitizen_*/GraphicsSettings; do
+        [ -d "${gs_dir}" ] && fix_ownership "${gs_dir}"
+    done
+fi
+echo "  [OK] Configured Vulkan (GraphicsRenderer = 1) as standard startup renderer"
 
 # 6. Verify runner execution
 DEPLOYED_WINE="${SC_GAMES_DIR}/runners/${RUNNER_NAME}/bin/wine"

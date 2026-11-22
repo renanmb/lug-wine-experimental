@@ -10,8 +10,9 @@ This guide documents the root causes, diagnostic logs, and solutions for the com
 | :--- | :--- | :--- | :--- |
 | **`sc-launch.sh` Silent Exit** | Launcher window does not open; log says `DXVK: No adapters found. Please check your device filter settings` | Restrictive `DXVK_FILTER_DEVICE_NAME` + laptop Optimus variables breaking desktop GLX | Set `DXVK_FILTER_DEVICE_NAME="NVIDIA RTX PRO 6000"` and remove Optimus offload variables |
 | **RSI Launcher Black Screen** | Launcher window opens and resizes (`1440×900`) with working background logs, but renders solid black | `winex11.so` compiled without `libxcomposite-dev` (`SONAME_LIBXCOMPOSITE`), leaving Electron child-HWND Vulkan surfaces unredirected | Build with `libxcomposite-dev` and `--with-xcomposite` (`11.22-2+`); verified by `verify_prefix.sh` |
-| **Vulkan API Version Crash** | Pop-up: `Vulkan API version for chosen GPU Device is less than Vulkan 1.2...`; `Fatal Error Thrown: Required Vulkan API Version not available` | Uninitialized `VkPhysicalDeviceLayeredDriverPropertiesMSFT` memory in `winevulkan` (`< 11.22-1`) disqualifying discrete GPUs | Resolved in `11.22-2+` via [`winevulkan-zero-conversion-context.patch`](../../../custom-patches/wine/winevulkan-zero-conversion-context.patch) and [`d3dkmt-sync-getfd.patch`](../../../patches/wine/d3dkmt-sync-getfd.patch) (or fallback to DX11 via `GraphicsRenderer: 0`) |
-| **Crash Loop After Changing Settings** | Game crashes on boot after changing resolution or window mode in the options menu | The in-game Graphics menu saves `GraphicsRenderer: 1` upon applying changes, taking precedence on next launch | Reset `GraphicsRenderer: 0` in `GraphicsSettings.json` |
+| **Vulkan API Version Crash (Historical `< 11.22-1`)** | Pop-up: `Vulkan API version for chosen GPU Device is less than Vulkan 1.2...`; `Fatal Error Thrown: Required Vulkan API Version not available` | Uninitialized `VkPhysicalDeviceLayeredDriverPropertiesMSFT` memory in `winevulkan` (`< 11.22-1`) disqualifying discrete GPUs | Resolved in `11.22-2+` via [`winevulkan-zero-conversion-context.patch`](../../../custom-patches/wine/winevulkan-zero-conversion-context.patch) and [`d3dkmt-sync-getfd.patch`](../../../patches/wine/d3dkmt-sync-getfd.patch); **Vulkan (`1`) is now the standard startup renderer** |
+| **DirectX 11 Broken on `4.10.3+`** | Game fails to work properly when started in DX11 (`Feature level: DX11.1`) | Star Citizen `4.10.3+` (`Build 13220821+`) expects Vulkan (`GraphicsRenderer: 1`); legacy `r.GraphicsRenderer = 0` in `user.cfg` forced DX11 on first boot | Enforce `r.GraphicsRenderer = 1` in `LIVE/user.cfg` and `"GraphicsRenderer": 1` in `GraphicsSettings.json` via `sc-launch.sh` and [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh) |
+| **Renderer Reset / Ping-Pong** | Game switches renderers or writes malformed `GraphicsSettings.json` across patches | Mismatch between `LIVE/user.cfg` and new `starcitizen_(sc-alpha-*)` `GraphicsSettings.json` folders | `sc-launch.sh` (`ensure_vulkan_renderer`) automatically enforces `GraphicsRenderer = 1` in both files before every launch |
 | **Mouse Escaping in Windowed Mode** | Cursor drifts out of the window when navigating menus (Mobiglas, inventory) | Windowed mode (`WindowMode = 1`) unclips cursor during UI interaction | Rely on in-game auto-lock during gameplay, or enable Wine's `GrabPointer` registry setting |
 
 ---
@@ -58,63 +59,46 @@ export DXVK_FILTER_DEVICE_NAME="NVIDIA"
 
 ---
 
-## 3. Issue: Star Citizen Native Vulkan Crash (`Vulkan API Version < 1.2`)
+## 3. Standard Renderer Configuration: Native Vulkan (`GraphicsRenderer = 1`)
 
-### Diagnostic Symptoms
-When launching the game, Star Citizen displays a dialog:
-> *Vulkan API version for chosen GPU Device is less than Vulkan 1.2. At least version 1.2 is required to run the game... Reverting to Direct3D 11 Renderer.*
+### Background
+- In Star Citizen `4.10.3+` (`Build 13220821+`), DirectX 11 (`GraphicsRenderer: 0`) no longer works reliably, whereas **Native Vulkan (`GraphicsRenderer: 1`)** runs stably on `LUG Wine 11.22-2+` (`Vulkan 1.4.329` on `NVIDIA RTX PRO 6000 Blackwell`) thanks to [`winevulkan-zero-conversion-context.patch`](../../../custom-patches/wine/winevulkan-zero-conversion-context.patch) and [`d3dkmt-sync-getfd.patch`](../../../patches/wine/d3dkmt-sync-getfd.patch).
+- Earlier builds (`< 11.22-1`) suffered from an uninitialized `VkPhysicalDeviceLayeredDriverPropertiesMSFT` memory bug in `winevulkan` (`[VK] No valid Discrete GPU found`), which had temporarily required `r.GraphicsRenderer = 0` as a workaround. Leaving `r.GraphicsRenderer = 0` in `LIVE/user.cfg` caused new Star Citizen builds to boot into broken DX11 whenever a fresh `AppData` profile directory was created.
 
-Following this, the game crashes immediately. Inspecting `LIVE/Game.log` reveals:
-
-```text
-VulkanMetric - Device (NVIDIA RTX PRO 6000 Blackwell Workstation Edition) [GPU (Discrete)] ID:11185
-VulkanMetric -     Driver 595.99.2.0
-VulkanMetric -     VulkanAPI 1.4.329
-[VK] No valid Discrete GPU found, searching for potential Integrated GPU
-[VK] Chosen Vulkan GPU Device () Driver Version (0.0.0) Vulkan API (0.0.0) 
-[VK] Selected Physical Device does not support Vulkan Version 1.3 or higher!
-Fatal Error Thrown: Required Vulkan API Version not available.
-```
-
-### Root Cause
-- Star Citizen Alpha 3.23+ and 4.x include an experimental **native Vulkan renderer** (`GraphicsRenderer: 1`).
-- On Wine/Linux, Star Citizen's native device selection logic fails to properly map Windows DXGI adapter LUIDs to `winevulkan` devices. It rejects the discrete GPU, falls back to `(0.0.0)`, and crashes.
-- **On Linux, DirectX 11 IS Vulkan:** When Star Citizen is set to **DirectX 11** (`GraphicsRenderer: 0`), Wine routes calls through **DXVK**. DXVK translates D3D11 directly into native Vulkan calls on the host, delivering full Vulkan performance, multi-threaded shader compiling, and rock-solid stability.
-
-### Fix
-Force the engine to use DirectX 11 via DXVK in both configuration files:
+### Standard Vulkan Startup Configuration (Automated in `sc-launch.sh` & [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh))
+Both `~/Games/star-citizen/sc-launch.sh` (`ensure_vulkan_renderer`) and [`deploy-to-lug-helper.sh`](../../../deploy-to-lug-helper.sh) now automatically enforce Native Vulkan (`1`) at startup across all installed channels (`LIVE`, `PTU`, `EPTU`, `TECH-PREVIEW`) and `AppData` profile folders while preserving all other graphics settings:
 
 #### 1. In `LIVE/user.cfg`:
-Create or edit `~/Games/star-citizen/drive_c/Program Files/Roberts Space Industries/StarCitizen/LIVE/user.cfg`:
+`~/Games/star-citizen/drive_c/Program Files/Roberts Space Industries/StarCitizen/LIVE/user.cfg`:
 ```text
-r.GraphicsRenderer = 0
+r.GraphicsRenderer = 1
 ```
 
 #### 2. In `GraphicsSettings.json`:
-Edit `~/Games/star-citizen/drive_c/users/tarfy/AppData/Local/star citizen/starcitizen_(sc-alpha-4.10.2)_ot8f6_0/GraphicsSettings/GraphicsSettings.json`:
+`~/Games/star-citizen/drive_c/users/tarfy/AppData/Local/star citizen/starcitizen_*/GraphicsSettings/GraphicsSettings.json`:
 ```json
 {
   "GraphicsSettings": {
     "SettingsVersion": 1,
-    "GraphicsRenderer": 0
+    "GraphicsRenderer": 1
   }
 }
 ```
 
 > [!IMPORTANT]
-> If `GraphicsSettings.json` has `"GraphicsRenderer": 1`, it **overrides** `user.cfg`. Both files must be set to `0`.
+> Both `LIVE/user.cfg` and `GraphicsSettings.json` are kept at `1` (Vulkan) so first-boot after game updates and subsequent launches always start directly in Vulkan.
 
 ---
 
 ## 4. Configuring Resolution & Windowed Mode (e.g. 2560×1440 Windowed)
 
-Changing resolution or display mode inside the in-game menu can trigger a crash loop because hitting **Apply** in that menu also re-saves the active renderer as Vulkan. To configure resolution and window mode safely without touching the in-game menu:
+To configure resolution and window mode cleanly alongside the Vulkan renderer default:
 
 ### Step 1: Update `LIVE/user.cfg`
 Add CryEngine resolution and display mode parameters to `~/Games/star-citizen/drive_c/Program Files/Roberts Space Industries/StarCitizen/LIVE/user.cfg`:
 
 ```text
-r.GraphicsRenderer = 0
+r.GraphicsRenderer = 1
 r_Width = 2560
 r_Height = 1440
 r_Fullscreen = 0
@@ -173,7 +157,7 @@ When diagnosing game startup or graphics issues, check these files in order:
    ```bash
    cat ~/Games/star-citizen/drive_c/users/tarfy/AppData/Local/star\ citizen/*/GraphicsSettings/GraphicsSettings.json
    ```
-   *Note:* `"GraphicsRenderer": 1` uses Native Vulkan (supported in `11.22-2+`); `"GraphicsRenderer": 0` uses DirectX 11 (DXVK).
+   *Ensure:* `"GraphicsRenderer": 1` (Native Vulkan, standard default).
 
 ---
 
