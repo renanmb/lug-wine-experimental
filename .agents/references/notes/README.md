@@ -23,3 +23,8 @@ This directory contains technical notes, operational guides, and deployment work
    - Overview of the repository architecture, build presets, and fork purpose (Ubuntu 22.04 / GLIBC 2.35 support).
    - Detailed breakdown of `patches/`, `vkd3d-proton/`, and `wine-tkg-git/`.
    - Explanation of how Git submodules (`patches`, `wine-tkg-git`) and Git-ignored clones (`vkd3d-proton`) are tracked, synced, and handled in GitHub.
+
+4. [**`virtual_cable_audio_isolation_and_sc_launch_integration.md`**](./virtual_cable_audio_isolation_and_sc_launch_integration.md):
+   - Cross-repository handoff from `Virtual-Cables-Linux` for isolating `lug-wine-experimental` / Star Citizen audio onto `Virtual_Speaker` (`PULSE_SINK=virtspk`) via `winepulse.drv`.
+   - Exact host terminal (`Option A`), `sc-launch.sh` (`Option B` / `SC_VIRTUAL_CABLE`), and Lutris (`Option C`) configurations plus mandatory VOIP and post-reboot audio invariants.
+   - Implementation checklist for `sc-launch.sh`, `deploy-to-lug-helper.sh`, `winepulse.so` build/smoke-test guardrails (`--with-pulse`), and `.agents` multi-assistant alignment.

@@ -109,6 +109,7 @@ These patches address specific quirks, bottlenecks, and anti-cheat requirements 
   - [1. Architecture & What We Built](./docs/01_architecture_and_what_we_built.md)
   - [2. Git Tracking & Version Control Strategy](./docs/02_git_tracking_and_version_control_strategy.md)
   - [3. Replication & Clean OS Install Guide](./docs/03_replication_and_clean_install_guide.md)
+  - [4. Audio Configuration, Virtual Cable Isolation & OBS Streaming Guide](./docs/04_audio_isolation_and_obs_streaming_guide.md)
 - [**Plans Index (`plans/README.md`)**](./plans/README.md):
   - [Wine-TKG Skills & MCP Architecture Plan](./plans/wine_tkg_skills_and_mcp_plan.md)
   - [GLIBC 2.35 Build & Compatibility Plan](./plans/glibc_235_compatibility_plan.md)
@@ -116,3 +117,4 @@ These patches address specific quirks, bottlenecks, and anti-cheat requirements 
   - [LUG Helper Runner Deployment & Execution Guide](./notes/lug_helper_runner_deployment_and_execution.md)
   - [Star Citizen Graphics, Vulkan & Launch Troubleshooting](./notes/star_citizen_graphics_vulkan_and_launch_troubleshooting.md)
   - [Repository Structure, Core Directories, and Submodule Management](./notes/repository_structure_and_submodules.md)
+  - [Virtual Cable Audio Isolation & `sc-launch.sh` Integration Handoff](./notes/virtual_cable_audio_isolation_and_sc_launch_integration.md)
