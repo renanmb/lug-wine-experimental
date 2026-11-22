@@ -56,6 +56,22 @@ parse_adhoc() {
   patches+=("${adhoc[@]}")
 }
 
+verify_host_headers() {
+  if command -v pkg-config >/dev/null 2>&1; then
+    local missing_pc=()
+    for mod in x11 xext xcomposite xrender xfixes xrandr xinerama xcursor xi vulkan wayland-client xkbcommon gstreamer-1.0; do
+      if ! pkg-config --exists "$mod" 2>/dev/null; then
+        missing_pc+=("$mod")
+      fi
+    done
+    if [ "${#missing_pc[@]}" -gt 0 ]; then
+      echo "ERROR: Missing required development pkg-config modules: ${missing_pc[*]}" >&2
+      echo "       Ensure libxcomposite-dev, libxrender-dev, libxfixes-dev, and X11/Vulkan/Wayland/GStreamer dev headers are installed before building." >&2
+      exit 1
+    fi
+  fi
+}
+
 ensure_vkd3d_proton() {
   if [ -f "$vkd3d_build_dir/x64/d3d12.dll" ] && [ -f "$vkd3d_build_dir/x86/d3d12.dll" ]; then
     echo "Using existing vkd3d-proton build at $vkd3d_build_dir"
@@ -246,6 +262,7 @@ if [ "$#" -gt 0 ]; then
     done
 fi
 
+verify_host_headers
 ensure_vkd3d_proton
 prepare_preset
 build_lug_wine

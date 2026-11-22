@@ -129,7 +129,24 @@ else
   test_passed=0
 fi
 
-# 6. Check cmd execution
+# 6. Check winex11.so XComposite support (required for Electron/Chromium child-window Vulkan/DXVK rendering in RSI Launcher)
+echo ""
+echo "--- Verifying X11 Driver Compositing Support (winex11.so) ---"
+WINEX11_SO="$RUNNER_DIR/lib/wine/x86_64-unix/winex11.so"
+if [ -f "$WINEX11_SO" ]; then
+  winex11_strings="$(strings "$WINEX11_SO")"
+  if grep -q "libXcomposite.so" <<<"$winex11_strings" && grep -q "XCompositeRedirectWindow" <<<"$winex11_strings"; then
+    echo "  [PASS] winex11.so includes XComposite support (libXcomposite.so / XCompositeRedirectWindow)"
+  else
+    echo "  [FAIL] winex11.so is missing XComposite support (SONAME_LIBXCOMPOSITE); RSI Launcher child windows will render black!"
+    test_passed=0
+  fi
+else
+  echo "  [FAIL] $WINEX11_SO not found"
+  test_passed=0
+fi
+
+# 7. Check cmd execution
 echo ""
 echo "--- Testing Wine Command Execution ---"
 cmd_out=$("$WINE_BIN" cmd /c "echo Wine Prefix Execution OK" 2>/dev/null | tr -d '\r')
